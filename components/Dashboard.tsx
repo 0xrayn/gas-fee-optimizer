@@ -47,7 +47,7 @@ export default function Dashboard() {
   const chainCfg          = CHAINS[chain];
   const tzAbbr            = getUserTimezoneAbbr();
   const tzOffset          = getUserUTCOffset();
-  const pct               = (countdown / 10) * 100;
+  const pct               = (countdown / 60) * 100;
   const circumference     = 2 * Math.PI * 8;
   const isLoaded          = gasData.avg > 0;
   const priceChangePos    = priceChange >= 0; // sudah include satuan, e.g. "ETH Price (ARB gas)"
@@ -180,7 +180,7 @@ export default function Dashboard() {
                     />
                   </svg>
                   <span className="text-[9px] font-mono font-bold z-10" style={{ color: chainCfg.color }}>
-                    {countdown}
+                    {countdown}s
                   </span>
                 </div>
                 <button
@@ -227,7 +227,7 @@ export default function Dashboard() {
                 ? `Last updated: ${formatLocalDateTime(new Date(gasData.fetchedAt))} ${tzAbbr}`
                 : "Initializing..."
               }{" "}
-              · Auto-refresh every 10s
+              · Auto-refresh every 1 min
             </p>
             <div className="mt-5 flex justify-center">
               <a

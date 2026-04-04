@@ -169,3 +169,40 @@ input[type="number"]::-webkit-outer-spin-button {
   );
   background-size: 200% 100%;
 }
+
+/* ── AnimatedBackground: theme via CSS data-theme, zero JS re-render ──── */
+.animated-bg-base {
+  background: #030712;
+  transition: background 250ms ease;
+}
+[data-theme="light"] .animated-bg-base {
+  background: #f0f4ff;
+}
+
+.animated-bg-glow-tl {
+  background: rgba(98, 126, 234, 0.10);
+  transition: background 250ms ease;
+}
+[data-theme="light"] .animated-bg-glow-tl {
+  background: rgba(98, 126, 234, 0.15);
+}
+
+.animated-bg-glow-br {
+  background: rgba(16, 185, 129, 0.08);
+  transition: background 250ms ease;
+}
+[data-theme="light"] .animated-bg-glow-br {
+  background: rgba(52, 211, 153, 0.12);
+}
+
+.animated-bg-grid {
+  opacity: 0.03;
+  background-image:
+    linear-gradient(rgba(99, 126, 234, 0.8) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(99, 126, 234, 0.8) 1px, transparent 1px);
+  background-size: 60px 60px;
+  transition: opacity 250ms ease;
+}
+[data-theme="light"] .animated-bg-grid {
+  opacity: 0.06;
+}

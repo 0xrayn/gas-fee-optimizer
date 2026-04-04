@@ -4,7 +4,8 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import type { Chain, GasData, GasHistory } from "@/types";
 import { formatLocalTime } from "@/lib/timezone";
 
-const INTERVAL_MS = 10_000;
+// ── Interval: 1 menit ──────────────────────────────────────────────────────
+const INTERVAL_MS = 60_000;
 const MAX_HISTORY = 20;
 
 const SIM_BASE: Record<Chain, { base: number; spread: number }> = {
@@ -22,31 +23,27 @@ function simulateGas(chain: Chain): GasData {
   return { low, avg, high, chain, fetchedAt: new Date() };
 }
 
-// Pre-seed history dengan beberapa titik simulasi supaya chart langsung terisi
-// saat pindah ke chain baru (tidak menunggu 10 detik)
+// Seed 6 titik mundur tiap 1 menit supaya chart langsung terisi saat ganti chain
 function seedHistory(chain: Chain, count = 6): GasHistory[] {
   const now = Date.now();
-  const points: GasHistory[] = [];
-  for (let i = count; i >= 1; i--) {
+  return Array.from({ length: count }, (_, i) => {
     const sim = simulateGas(chain);
-    const ts  = new Date(now - i * INTERVAL_MS);
-    points.push({
-      time: formatLocalTime(ts),
+    const ts  = new Date(now - (count - i) * INTERVAL_MS);
+    return {
+      time:    formatLocalTime(ts),
       timeRaw: ts.getTime(),
-      gas: sim.avg,
+      gas:     sim.avg,
       chain,
-    });
-  }
-  return points;
+    };
+  });
 }
 
 const EMPTY_GAS = (chain: Chain): GasData => ({
   low: 0, avg: 0, high: 0, chain, fetchedAt: new Date(0),
 });
 
-// Module-level cache — bertahan selama session browser
 const gasCache: Partial<Record<Chain, { data: GasData; history: GasHistory[]; ts: number }>> = {};
-const CACHE_TTL_MS = 8_000;
+const CACHE_TTL_MS = 55_000; // sedikit di bawah 1 menit
 
 export function useGasPolling(chain: Chain, initialData?: GasData) {
   const initCache = gasCache[chain];
@@ -54,9 +51,7 @@ export function useGasPolling(chain: Chain, initialData?: GasData) {
   const [gasData, setGasData] = useState<GasData>(
     initialData ?? (initCache ? initCache.data : EMPTY_GAS(chain))
   );
-  const [history, setHistory] = useState<GasHistory[]>(
-    initCache?.history ?? []
-  );
+  const [history, setHistory] = useState<GasHistory[]>(initCache?.history ?? []);
   const [countdown, setCountdown]       = useState(INTERVAL_MS / 1000);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError]               = useState<string | null>(null);
@@ -66,16 +61,15 @@ export function useGasPolling(chain: Chain, initialData?: GasData) {
   const chainRef     = useRef(chain);
 
   const fetchGas = useCallback(async (explicitChain?: Chain) => {
-    // Gunakan explicitChain kalau disediakan (untuk menghindari stale closure)
     const currentChain = explicitChain ?? chainRef.current;
     setIsRefreshing(true);
     setError(null);
 
-    const makePt = (avg: number, c: Chain, ts: Date): GasHistory => ({
-      time: formatLocalTime(ts),   // timestamp DARI data, bukan new Date()
+    const makePoint = (avg: number, c: Chain, ts: Date): GasHistory => ({
+      time:    formatLocalTime(ts),
       timeRaw: ts.getTime(),
-      gas: avg,
-      chain: c,
+      gas:     avg,
+      chain:   c,
     });
 
     try {
@@ -86,11 +80,10 @@ export function useGasPolling(chain: Chain, initialData?: GasData) {
 
       if (chainRef.current !== currentChain) return;
 
-      const pt = makePt(data.avg, currentChain, data.fetchedAt);
+      const pt = makePoint(data.avg, currentChain, data.fetchedAt);
       setGasData(data);
       setHistory((prev) => {
-        // Filter hanya titik chain ini, lalu tambah titik baru
-        const filtered = prev.filter((h) => h.chain === currentChain);
+        const filtered  = prev.filter((h) => h.chain === currentChain);
         const newHistory = [...filtered, pt].slice(-MAX_HISTORY);
         gasCache[currentChain] = { data, history: newHistory, ts: Date.now() };
         return newHistory;
@@ -99,10 +92,10 @@ export function useGasPolling(chain: Chain, initialData?: GasData) {
       const sim = simulateGas(currentChain);
       if (chainRef.current !== currentChain) return;
 
-      const pt = makePt(sim.avg, currentChain, sim.fetchedAt);
+      const pt = makePoint(sim.avg, currentChain, sim.fetchedAt);
       setGasData(sim);
       setHistory((prev) => {
-        const filtered = prev.filter((h) => h.chain === currentChain);
+        const filtered  = prev.filter((h) => h.chain === currentChain);
         const newHistory = [...filtered, pt].slice(-MAX_HISTORY);
         gasCache[currentChain] = { data: sim, history: newHistory, ts: Date.now() };
         return newHistory;
@@ -115,8 +108,6 @@ export function useGasPolling(chain: Chain, initialData?: GasData) {
 
   useEffect(() => {
     chainRef.current = chain;
-
-    // Clear interval lama dulu
     if (intervalRef.current)  clearInterval(intervalRef.current);
     if (countdownRef.current) clearInterval(countdownRef.current);
 
@@ -124,18 +115,15 @@ export function useGasPolling(chain: Chain, initialData?: GasData) {
     const cached = gasCache[chain];
 
     if (cached && now - cached.ts < CACHE_TTL_MS) {
-      // Cache fresh — pakai langsung
       setGasData(cached.data);
       setHistory(cached.history);
       setError(null);
     } else {
-      // Tidak ada cache atau expired:
-      // Langsung tampilkan seed history (titik simulasi) supaya chart tidak kosong
-      const seeded = cached?.history ?? seedHistory(chain);
+      // Tampilkan seed langsung supaya chart tidak kosong, fetch real di background
+      const seeded = cached?.history?.length ? cached.history : seedHistory(chain);
       setGasData(cached?.data ?? EMPTY_GAS(chain));
       setHistory(seeded);
       setError(null);
-      // Fetch real data sekarang — hasilnya akan append ke seed history
       fetchGas(chain);
     }
 

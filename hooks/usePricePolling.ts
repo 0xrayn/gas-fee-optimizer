@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import type { Chain } from "@/types";
 
 export const PRICE_DISPLAY_LABEL: Record<Chain, string> = {
@@ -13,51 +13,82 @@ interface PriceData {
   price: number;
   priceChange: number;
   isLoading: boolean;
-  // Untuk ARB: kita juga butuh harga ETH supaya TxEstimator bisa hitung USD fee dengan benar
   ethPrice: number;
 }
 
-const priceCache: Partial<Record<Chain, { price: number; priceChange: number; ethPrice: number; ts: number }>> = {};
+interface CacheEntry {
+  price: number;
+  priceChange: number;
+  ethPrice: number;
+  ts: number;
+}
+
+const priceCache: Partial<Record<Chain, CacheEntry>> = {};
 const CACHE_TTL_MS = 55_000;
 
-export function usePricePolling(chain: Chain): PriceData {
-  const initCache = priceCache[chain];
-  const [price, setPrice]           = useState(initCache?.price ?? 0);
-  const [priceChange, setPriceChange] = useState(initCache?.priceChange ?? 0);
-  const [ethPrice, setEthPrice]     = useState(initCache?.ethPrice ?? 0);
-  const [isLoading, setIsLoading]   = useState(!initCache);
+// In-flight dedup: satu fetch per chain sekaligus
+const inflight: Partial<Record<Chain, Promise<CacheEntry | null>>> = {};
 
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const chainRef = useRef(chain);
+async function doFetch(c: Chain): Promise<CacheEntry | null> {
+  try {
+    const res = await fetch(`/api/price?chain=${c}`, { cache: "no-store" });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
 
-  async function fetchPrice(c: Chain) {
-    try {
-      const res = await fetch(`/api/price?chain=${c}`, { cache: "no-store" });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
+    const entry: CacheEntry = {
+      price:       data.price       ?? 0,
+      priceChange: data.priceChange ?? 0,
+      ethPrice:    data.ethPrice    ?? data.price ?? 0,
+      ts:          Date.now(),
+    };
 
-      if (chainRef.current !== c) return;
+    // Simpan ke cache
+    priceCache[c] = entry;
 
-      priceCache[c] = {
-        price: data.price,
-        priceChange: data.priceChange,
-        ethPrice: data.ethPrice ?? data.price,
-        ts: Date.now(),
+    // Bonus: saat fetch ARB, cache sekalian harga ETH
+    if (c === "ARB" && entry.ethPrice > 0 && !priceCache["ETH"]) {
+      priceCache["ETH"] = {
+        price:       entry.ethPrice,
+        priceChange: 0,
+        ethPrice:    entry.ethPrice,
+        ts:          Date.now(),
       };
-
-      setPrice(data.price);
-      setPriceChange(data.priceChange);
-      setEthPrice(data.ethPrice ?? data.price);
-      setIsLoading(false);
-    } catch {
-      if (chainRef.current === c) {
-        setPrice(0);
-        setPriceChange(0);
-        setEthPrice(0);
-        setIsLoading(false);
-      }
     }
+
+    return entry;
+  } catch {
+    return null;
+  } finally {
+    delete inflight[c];
   }
+}
+
+// Shared fetch dengan dedup — caller ganda tidak double-fetch
+function fetchPrice(c: Chain): Promise<CacheEntry | null> {
+  if (!inflight[c]) {
+    inflight[c] = doFetch(c);
+  }
+  return inflight[c]!;
+}
+
+export function usePricePolling(chain: Chain): PriceData {
+  // Seed dari cache supaya tidak flash 0 saat ganti chain
+  const seed = priceCache[chain];
+  const [price,       setPrice]       = useState(seed?.price       ?? 0);
+  const [priceChange, setPriceChange] = useState(seed?.priceChange ?? 0);
+  const [ethPrice,    setEthPrice]    = useState(seed?.ethPrice    ?? 0);
+  const [isLoading,   setIsLoading]   = useState(!seed);
+
+  const chainRef = useRef(chain);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const applyEntry = useCallback((entry: CacheEntry, forChain: Chain) => {
+    if (chainRef.current !== forChain) return; // chain sudah ganti — buang
+    setPrice(entry.price);
+    setPriceChange(entry.priceChange);
+    setEthPrice(entry.ethPrice);
+    setIsLoading(false);
+  }, []);
 
   useEffect(() => {
     chainRef.current = chain;
@@ -66,33 +97,43 @@ export function usePricePolling(chain: Chain): PriceData {
     const now    = Date.now();
 
     if (cached && now - cached.ts < CACHE_TTL_MS) {
-      setPrice(cached.price);
-      setPriceChange(cached.priceChange);
-      setEthPrice(cached.ethPrice);
-      setIsLoading(false);
+      // Cache masih fresh — tampilkan langsung, tidak perlu fetch
+      applyEntry(cached, chain);
+    } else if (cached) {
+      // Cache stale — tampilkan dulu (biar tidak flash 0), fetch di background
+      applyEntry(cached, chain);
+      fetchPrice(chain).then((entry) => {
+        if (entry) applyEntry(entry, chain);
+      });
     } else {
-      if (cached) {
-        setPrice(cached.price);
-        setPriceChange(cached.priceChange);
-        setEthPrice(cached.ethPrice);
-        setIsLoading(false);
-      } else {
-        setPrice(0);
-        setPriceChange(0);
-        setEthPrice(0);
-        setIsLoading(true);
-      }
-      fetchPrice(chain);
+      // Belum ada cache — loading state, fetch sekarang
+      setIsLoading(true);
+      fetchPrice(chain).then((entry) => {
+        if (chainRef.current !== chain) return;
+        if (entry) {
+          applyEntry(entry, chain);
+        } else {
+          // Fetch gagal total dan tidak ada cache — coba lagi stale global
+          const stale = priceCache[chain];
+          if (stale) applyEntry(stale, chain);
+          else setIsLoading(false); // tetap 0, jangan infinite loading
+        }
+      });
     }
 
+    // Polling tiap 60 detik
     if (timerRef.current) clearInterval(timerRef.current);
-    timerRef.current = setInterval(() => fetchPrice(chain), 60_000);
+    timerRef.current = setInterval(() => {
+      const c = chainRef.current;
+      fetchPrice(c).then((entry) => {
+        if (entry) applyEntry(entry, c);
+      });
+    }, 60_000);
 
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [chain]);
+  }, [chain, applyEntry]);
 
   return { price, priceChange, isLoading, ethPrice };
 }

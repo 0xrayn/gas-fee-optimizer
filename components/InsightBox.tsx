@@ -4,8 +4,7 @@ import { useState, useEffect } from "react";
 import { useTheme } from "@/components/ThemeProvider";
 import { getBestWindowHint, getHourLocal, getUserTimezoneAbbr } from "@/lib/timezone";
 import { CHAINS } from "@/lib/chains";
-import type { GasData } from "@/types";
-import type { Chain } from "@/types";
+import type { GasData, Chain } from "@/types";
 
 interface InsightBoxProps {
   gas: GasData;
@@ -13,39 +12,34 @@ interface InsightBoxProps {
   chain: Chain;
 }
 
-function getGasLevel(avg: number): {
-  label: string;
-  color: string;
-  dot: string;
-  advice: string;
-} {
-  if (avg < 15) {
-    return { label: "Very Low", color: "#10b981", dot: "bg-emerald-400", advice: "Excellent — transact now with any speed setting." };
-  } else if (avg < 30) {
-    return { label: "Low", color: "#22c55e", dot: "bg-green-400", advice: "Good conditions. Use 'Slow' to save even more." };
-  } else if (avg < 60) {
-    return { label: "Moderate", color: "#f59e0b", dot: "bg-amber-400", advice: "Acceptable for urgent txns. Consider waiting for <30 Gwei." };
-  } else if (avg < 100) {
-    return { label: "High", color: "#f97316", dot: "bg-orange-400", advice: "Elevated fees. Delay non-urgent transactions." };
-  } else {
-    return { label: "Very High", color: "#ef4444", dot: "bg-red-400", advice: "Network congested. Wait unless urgent." };
-  }
+// Threshold berbeda per chain — MATIC normal 50-150, ARB normal 0.05-0.2
+const GAS_LEVELS: Record<Chain, { veryLow: number; low: number; moderate: number; high: number }> = {
+  ETH:   { veryLow: 10,   low: 20,   moderate: 50,   high: 90   },
+  MATIC: { veryLow: 30,   low: 60,   moderate: 100,  high: 150  },
+  ARB:   { veryLow: 0.03, low: 0.08, moderate: 0.15, high: 0.25 },
+};
+
+function getGasLevel(avg: number, chain: Chain) {
+  const t = GAS_LEVELS[chain];
+  if (avg < t.veryLow)  return { label: "Very Low",  color: "#10b981", dot: "bg-emerald-400", advice: "Excellent — transact now with any speed setting." };
+  if (avg < t.low)      return { label: "Low",       color: "#22c55e", dot: "bg-green-400",   advice: "Good conditions. Use 'Slow' to save even more." };
+  if (avg < t.moderate) return { label: "Moderate",  color: "#f59e0b", dot: "bg-amber-400",   advice: "Acceptable for urgent txns. Consider waiting for cheaper gas." };
+  if (avg < t.high)     return { label: "High",      color: "#f97316", dot: "bg-orange-400",  advice: "Elevated fees. Delay non-urgent transactions." };
+  return                         { label: "Very High", color: "#ef4444", dot: "bg-red-400",    advice: "Network congested. Wait unless urgent." };
 }
 
 export default function InsightBox({ gas, alertThreshold, chain }: InsightBoxProps) {
   const { theme } = useTheme();
-  const level = getGasLevel(gas.avg);
+  const level    = getGasLevel(gas.avg, chain);
   const hourHint = getBestWindowHint(getHourLocal(new Date()));
-  const tzAbbr = getUserTimezoneAbbr();
+  const tzAbbr   = getUserTimezoneAbbr();
   const chainCfg = CHAINS[chain];
 
   const [mounted, setMounted] = useState(false);
-  useEffect(() => {
-    const t = setTimeout(() => setMounted(true), 0);
-    return () => clearTimeout(t);
-  }, []);
+  useEffect(() => { setMounted(true); }, []);
 
   const isUnderAlert = mounted && gas.avg > 0 && gas.avg <= alertThreshold;
+  const spread = gas.high - gas.low;
 
   return (
     <div className={`rounded-2xl border p-5 space-y-4 transition-colors duration-300 ${
@@ -63,7 +57,9 @@ export default function InsightBox({ gas, alertThreshold, chain }: InsightBoxPro
             {chainCfg.label} Network Status
           </p>
           <p suppressHydrationWarning className="text-base font-bold" style={{ color: level.color }}>
-            {gas.avg > 0 ? `${level.label} — ${gas.avg.toFixed(2)} Gwei avg` : "Loading..."}
+            {gas.avg > 0
+              ? `${level.label} — ${gas.avg.toFixed(gas.avg < 1 ? 4 : 2)} Gwei avg`
+              : "Loading..."}
           </p>
         </div>
       </div>
@@ -78,15 +74,15 @@ export default function InsightBox({ gas, alertThreshold, chain }: InsightBoxPro
         </div>
       )}
 
-      {/* Insights list */}
+      {/* Insights */}
       {gas.avg > 0 && (
         <div suppressHydrationWarning className="space-y-2.5">
           {[
             { icon: "💡", text: level.advice },
-            { icon: "🕐", text: hourHint + ` (${tzAbbr})` },
+            { icon: "🕐", text: `${hourHint} (${tzAbbr})` },
             {
               icon: "📊",
-              text: `Spread: ${(gas.high - gas.low).toFixed(2)} Gwei — ${gas.high - gas.low > 20 ? "high volatility" : "stable network"}`,
+              text: `Spread: ${spread.toFixed(spread < 1 ? 4 : 2)} Gwei — ${spread > (GAS_LEVELS[chain].moderate * 0.5) ? "high volatility" : "stable network"}`,
             },
             ...(gas.baseFee ? [{ icon: "⛽", text: `Base fee: ${gas.baseFee.toFixed(2)} Gwei` }] : []),
           ].map((item, i) => (
