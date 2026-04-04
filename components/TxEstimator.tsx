@@ -1,11 +1,13 @@
 "use client";
 
 import { useTheme } from "@/components/ThemeProvider";
-import type { GasData } from "@/types";
+import { CHAINS } from "@/lib/chains";
+import type { GasData, Chain } from "@/types";
 
 interface TxEstimatorProps {
   gas: GasData;
-  ethPriceUsd?: number;
+  chain: Chain;
+  nativePrice?: number;
 }
 
 const TX_TYPES = [
@@ -16,7 +18,7 @@ const TX_TYPES = [
   { name: "Contract Deploy", gasUnits: 600_000, icon: "📦" },
 ];
 
-function calcFeeEth(gwei: number, gasUnits: number): number {
+function calcFeeNative(gwei: number, gasUnits: number): number {
   return (gwei * gasUnits) / 1e9;
 }
 
@@ -26,18 +28,16 @@ function feeLevel(gwei: number): { cls: string; label: string } {
   return { cls: "text-red-400 bg-red-400/10 border-red-400/20", label: "High" };
 }
 
-export default function TxEstimator({ gas, ethPriceUsd = 3200 }: TxEstimatorProps) {
+export default function TxEstimator({ gas, chain, nativePrice = 0 }: TxEstimatorProps) {
   const { theme } = useTheme();
   const level = feeLevel(gas.avg);
+  const chainCfg = CHAINS[chain];
+  const currency = chainCfg.nativeCurrency;
 
   return (
-    <div
-      className={`rounded-2xl border p-5 transition-colors duration-300 ${
-        theme === "dark"
-          ? "bg-white/[0.02] border-white/[0.07]"
-          : "bg-white/60 border-black/[0.07] backdrop-blur-sm"
-      }`}
-    >
+    <div className={`rounded-2xl border p-5 transition-colors duration-300 ${
+      theme === "dark" ? "bg-white/[0.02] border-white/[0.07]" : "bg-white/60 border-black/[0.07] backdrop-blur-sm"
+    }`}>
       <div className="flex items-center justify-between mb-4">
         <p className={`text-xs font-semibold uppercase tracking-widest ${theme === "dark" ? "text-white/40" : "text-black/40"}`}>
           Fee Estimator
@@ -49,15 +49,13 @@ export default function TxEstimator({ gas, ethPriceUsd = 3200 }: TxEstimatorProp
 
       <div className="space-y-2">
         {TX_TYPES.map((tx) => {
-          const feeEth = calcFeeEth(gas.avg, tx.gasUnits);
-          const feeUsd = feeEth * ethPriceUsd;
+          const feeNative = calcFeeNative(gas.avg, tx.gasUnits);
+          const feeUsd = nativePrice > 0 ? feeNative * nativePrice : null;
           return (
             <div
               key={tx.name}
               className={`flex items-center justify-between py-2 px-3 rounded-xl transition-colors duration-150 ${
-                theme === "dark"
-                  ? "bg-white/[0.03] hover:bg-white/[0.05]"
-                  : "bg-black/[0.03] hover:bg-black/[0.05]"
+                theme === "dark" ? "bg-white/[0.03] hover:bg-white/[0.05]" : "bg-black/[0.03] hover:bg-black/[0.05]"
               }`}
             >
               <div className="flex items-center gap-2.5">
@@ -67,11 +65,15 @@ export default function TxEstimator({ gas, ethPriceUsd = 3200 }: TxEstimatorProp
                 </span>
               </div>
               <div className="text-right">
-                <p className={`text-xs font-mono font-bold ${theme === "dark" ? "text-white/90" : "text-black/90"}`}>
-                  ${feeUsd < 0.01 ? feeUsd.toFixed(4) : feeUsd.toFixed(2)}
-                </p>
+                {feeUsd !== null ? (
+                  <p className={`text-xs font-mono font-bold ${theme === "dark" ? "text-white/90" : "text-black/90"}`}>
+                    ${feeUsd < 0.01 ? feeUsd.toFixed(4) : feeUsd.toFixed(2)}
+                  </p>
+                ) : (
+                  <p className={`text-xs font-mono ${theme === "dark" ? "text-white/30" : "text-black/30"}`}>—</p>
+                )}
                 <p className={`text-[10px] font-mono ${theme === "dark" ? "text-white/30" : "text-black/35"}`}>
-                  {feeEth < 0.0001 ? feeEth.toFixed(6) : feeEth.toFixed(5)} ETH
+                  {feeNative < 0.0001 ? feeNative.toFixed(6) : feeNative.toFixed(5)} {currency}
                 </p>
               </div>
             </div>

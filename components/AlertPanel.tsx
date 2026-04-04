@@ -6,14 +6,20 @@ import { Bell, BellOff } from "lucide-react";
 
 interface AlertPanelProps {
   threshold: number;
+  enabled: boolean;
   onThresholdChange: (v: number) => void;
+  onEnabledChange: (v: boolean) => void;
 }
 
-export default function AlertPanel({ threshold, onThresholdChange }: AlertPanelProps) {
+export default function AlertPanel({
+  threshold,
+  enabled,
+  onThresholdChange,
+  onEnabledChange,
+}: AlertPanelProps) {
   const { theme } = useTheme();
   const [input, setInput] = useState(String(threshold));
   const [saved, setSaved] = useState(false);
-  const [enabled, setEnabled] = useState(true);
 
   function handleSave() {
     const v = parseFloat(input);
@@ -25,19 +31,20 @@ export default function AlertPanel({ threshold, onThresholdChange }: AlertPanelP
   }
 
   return (
-    <div
-      className={`rounded-2xl border p-5 transition-colors duration-300 ${
-        theme === "dark"
-          ? "bg-white/[0.02] border-white/[0.07]"
-          : "bg-white/60 border-black/[0.07] backdrop-blur-sm"
-      }`}
-    >
+    <div className={`rounded-2xl border p-5 transition-colors duration-300 ${
+      theme === "dark" ? "bg-white/[0.02] border-white/[0.07]" : "bg-white/60 border-black/[0.07] backdrop-blur-sm"
+    }`}>
       <div className="flex items-center justify-between mb-4">
-        <p className={`text-xs font-semibold uppercase tracking-widest ${theme === "dark" ? "text-white/40" : "text-black/40"}`}>
-          Gas Alert
-        </p>
+        <div>
+          <p className={`text-xs font-semibold uppercase tracking-widest ${theme === "dark" ? "text-white/40" : "text-black/40"}`}>
+            Gas Alert
+          </p>
+          <p className={`text-xs mt-0.5 ${enabled ? "text-emerald-400" : theme === "dark" ? "text-white/20" : "text-black/25"}`}>
+            {enabled ? "● Active" : "○ Disabled"}
+          </p>
+        </div>
         <button
-          onClick={() => setEnabled((e) => !e)}
+          onClick={() => onEnabledChange(!enabled)}
           className={`p-1.5 rounded-lg transition-all duration-200 ${
             enabled
               ? "text-emerald-400 bg-emerald-400/10 hover:bg-emerald-400/20"
@@ -51,7 +58,7 @@ export default function AlertPanel({ threshold, onThresholdChange }: AlertPanelP
       </div>
 
       <p className={`text-sm mb-3 ${theme === "dark" ? "text-white/50" : "text-black/50"}`}>
-        Notify when avg gas drops below
+        Alert when avg gas drops below
       </p>
 
       <div className="flex gap-2">

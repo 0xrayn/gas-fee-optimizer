@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { RefreshCw, ExternalLink } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import { useTheme } from "@/components/ThemeProvider";
 import { useGasPolling } from "@/hooks/useGasPolling";
 import { usePricePolling } from "@/hooks/usePricePolling";
@@ -15,8 +15,8 @@ import GasChart from "@/components/GasChart";
 import InsightBox from "@/components/InsightBox";
 import TxEstimator from "@/components/TxEstimator";
 import AlertPanel from "@/components/AlertPanel";
-import GweiExplainer from "@/components/GweiExplainer";
 import type { Chain } from "@/types";
+import GweiExplainer from "./GweiExplainer";
 
 const CHAIN_SUBTITLE: Record<Chain, string> = {
   ETH: "Real-time Ethereum gas fee optimizer",
@@ -28,19 +28,18 @@ export default function Dashboard() {
   const { theme } = useTheme();
   const [chain, setChain] = useState<Chain>("ETH");
   const [alertThreshold, setAlertThreshold] = useState(20);
+  const [alertEnabled, setAlertEnabled] = useState(true);
 
-  const { gasData, history, countdown, isRefreshing, error, manualRefresh } =
-    useGasPolling(chain);
+  const { gasData, history, countdown, isRefreshing, error, manualRefresh } = useGasPolling(chain);
   const { price, priceChange } = usePricePolling(chain);
 
   const chainCfg = CHAINS[chain];
   const tzAbbr = getUserTimezoneAbbr();
   const tzOffset = getUserUTCOffset();
-
   const pct = (countdown / 10) * 100;
   const circumference = 2 * Math.PI * 8;
   const isLoaded = gasData.avg > 0;
-  const priceChangePositive = priceChange >= 0;
+  const priceUp = priceChange >= 0;
 
   return (
     <>
@@ -64,11 +63,10 @@ export default function Dashboard() {
               <h1 className={`text-3xl sm:text-4xl font-black tracking-tight font-mono ${theme === "dark" ? "text-white" : "text-black"}`}>
                 Gas
                 <span
-                  className="ml-2"
+                  key={chain}
+                  className="ml-2 inline-block"
                   style={{
-                    background: `linear-gradient(135deg, ${chainCfg.color}, ${chainCfg.color}99)`,
-                    WebkitBackgroundClip: "text",
-                    WebkitTextFillColor: "transparent",
+                    color: chainCfg.color,
                   }}
                 >
                   Watch
@@ -85,10 +83,9 @@ export default function Dashboard() {
           </header>
 
           {/* Price ticker */}
-          <div className={`flex items-center gap-3 mb-4 px-4 py-2.5 rounded-xl border transition-colors duration-300 ${
-            theme === "dark" ? "bg-white/[0.02] border-white/[0.07]" : "bg-white/60 border-black/[0.07] backdrop-blur-sm"
-          }`}>
-            <span className={`text-xs font-semibold uppercase tracking-widest ${theme === "dark" ? "text-white/40" : "text-black/40"}`}>
+          <div className={`flex items-center gap-3 mb-4 px-4 py-2.5 rounded-xl border transition-colors duration-300 ${theme === "dark" ? "bg-white/[0.02] border-white/[0.07]" : "bg-white/60 border-black/[0.07] backdrop-blur-sm"
+            }`}>
+            <span className={`text-xs font-semibold uppercase tracking-widest flex-shrink-0 ${theme === "dark" ? "text-white/40" : "text-black/40"}`}>
               {chainCfg.nativeCurrency} Price
             </span>
             {price > 0 ? (
@@ -96,25 +93,24 @@ export default function Dashboard() {
                 <span className={`font-mono font-bold text-sm ${theme === "dark" ? "text-white" : "text-black"}`}>
                   ${price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
-                <span className={`text-xs font-mono font-semibold ${priceChangePositive ? "text-emerald-400" : "text-red-400"}`}>
-                  {priceChangePositive ? "▲" : "▼"} {Math.abs(priceChange).toFixed(2)}%
+                <span className={`text-xs font-mono font-semibold ${priceUp ? "text-emerald-400" : "text-red-400"}`}>
+                  {priceUp ? "▲" : "▼"} {Math.abs(priceChange).toFixed(2)}%
                 </span>
                 <span className={`text-[10px] ml-auto ${theme === "dark" ? "text-white/20" : "text-black/25"}`}>
-                  via CoinGecko
+                  via CoinGecko · 24h
                 </span>
               </>
             ) : (
-              <span className={`text-xs font-mono ${theme === "dark" ? "text-white/30" : "text-black/30"}`}>Loading...</span>
+              <span className={`text-xs font-mono animate-pulse ${theme === "dark" ? "text-white/30" : "text-black/30"}`}>
+                Fetching price...
+              </span>
             )}
           </div>
 
           {/* Error banner */}
           {error && (
-            <div className={`mb-4 px-4 py-2.5 rounded-xl text-xs border ${
-              theme === "dark"
-                ? "bg-amber-400/10 border-amber-400/20 text-amber-400"
-                : "bg-amber-500/10 border-amber-500/20 text-amber-600"
-            }`}>
+            <div className={`mb-4 px-4 py-2.5 rounded-xl text-xs border ${theme === "dark" ? "bg-amber-400/10 border-amber-400/20 text-amber-400" : "bg-amber-500/10 border-amber-500/20 text-amber-600"
+              }`}>
               ⚠ {error}
             </div>
           )}
@@ -123,9 +119,8 @@ export default function Dashboard() {
           {!isLoaded ? (
             <div className="grid grid-cols-3 gap-3 sm:gap-4 mb-4">
               {[0, 1, 2].map((i) => (
-                <div key={i} className={`rounded-2xl border p-5 h-32 animate-pulse ${
-                  theme === "dark" ? "bg-white/[0.03] border-white/[0.08]" : "bg-white/70 border-black/[0.08]"
-                }`} />
+                <div key={i} className={`rounded-2xl border p-5 h-32 animate-pulse ${theme === "dark" ? "bg-white/[0.03] border-white/[0.08]" : "bg-white/70 border-black/[0.08]"
+                  }`} />
               ))}
             </div>
           ) : (
@@ -137,9 +132,8 @@ export default function Dashboard() {
           )}
 
           {/* Chart */}
-          <div className={`rounded-2xl border p-5 mb-4 transition-colors duration-300 animate-[fadeInUp_0.6s_ease-out_0.2s_both] ${
-            theme === "dark" ? "bg-white/[0.02] border-white/[0.07]" : "bg-white/60 border-black/[0.07] backdrop-blur-sm"
-          }`}>
+          <div className={`rounded-2xl border p-5 mb-4 transition-colors duration-300 animate-[fadeInUp_0.6s_ease-out_0.2s_both] ${theme === "dark" ? "bg-white/[0.02] border-white/[0.07]" : "bg-white/60 border-black/[0.07] backdrop-blur-sm"
+            }`}>
             <div className="flex items-center justify-between mb-4">
               <div>
                 <p className={`text-xs font-semibold uppercase tracking-widest ${theme === "dark" ? "text-white/40" : "text-black/40"}`}>
@@ -190,40 +184,49 @@ export default function Dashboard() {
 
           {/* Bottom grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-            <InsightBox gas={gasData} alertThreshold={alertThreshold} chain={chain} />
+            <InsightBox gas={gasData} alertThreshold={alertThreshold} alertEnabled={alertEnabled} chain={chain} />
             <TxEstimator gas={gasData} chain={chain} nativePrice={price} />
           </div>
 
-          <AlertPanel threshold={alertThreshold} onThresholdChange={setAlertThreshold} />
+          <AlertPanel
+            threshold={alertThreshold}
+            enabled={alertEnabled}
+            onThresholdChange={setAlertThreshold}
+            onEnabledChange={setAlertEnabled}
+          />
 
           {/* Gwei Explainer */}
           <GweiExplainer />
 
           {/* Footer */}
-          <footer className={`mt-6 text-center ${theme === "dark" ? "text-white/20" : "text-black/25"}`}>
-            <p className="text-[11px] font-mono">
-              {isLoaded
-                ? `Last updated: ${formatLocalDateTime(new Date(gasData.fetchedAt))} ${tzAbbr}`
-                : "Initializing..."
-              }{" "}
-              · Auto-refresh every 10s
-            </p>
-            <div className="mt-4">
+          <footer className="mt-8 pb-4">
+            <div className={`rounded-2xl border p-5 text-center transition-colors duration-300 ${theme === "dark" ? "bg-white/[0.02] border-white/[0.07]" : "bg-white/60 border-black/[0.07] backdrop-blur-sm"
+              }`}>
+              <p className={`text-[11px] font-mono ${theme === "dark" ? "text-white/20" : "text-black/25"}`}>
+                {isLoaded
+                  ? `Last updated: ${formatLocalDateTime(new Date(gasData.fetchedAt))} ${tzAbbr}`
+                  : "Initializing..."
+                }{" "}· Auto-refresh every 10s
+              </p>
+
+            </div>
+            <div className={`h-px w-16 mx-auto mb-3 ${theme === "dark" ? "bg-white/10" : "bg-black/10"}`}>
+              <p className={`text-xs font-semibold ${theme === "dark" ? "text-white/40" : "text-black/50"}`}>
+                Built with by{" "}
+                <span style={{ color: chainCfg.color }}>Rayn</span>
+              </p>
               <a
                 href="https://rayn.web.id"
                 target="_blank"
                 rel="noopener noreferrer"
-                className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-semibold border transition-all duration-200 hover:scale-105 active:scale-95 ${
-                  theme === "dark"
-                    ? "bg-white/5 border-white/10 text-white/60 hover:bg-white/10 hover:text-white/90"
-                    : "bg-black/5 border-black/10 text-black/50 hover:bg-black/10 hover:text-black/80"
-                }`}
+                className={`text-xs font-mono mt-1 inline-block transition-all duration-200 hover:underline ${theme === "dark" ? "text-white/25 hover:text-white/60" : "text-black/30 hover:text-black/70"
+                  }`}
               >
-                <ExternalLink size={12} />
-                Built by Rayn · rayn.web.id
+                rayn.web.id ↗
               </a>
             </div>
           </footer>
+
 
         </div>
       </div>
