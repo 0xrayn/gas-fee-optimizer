@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { RefreshCw } from "lucide-react";
-import { useTheme } from "@/components/ThemeProvider";
 import { useGasPolling } from "@/hooks/useGasPolling";
 import { usePricePolling, PRICE_DISPLAY_LABEL } from "@/hooks/usePricePolling";
 import { CHAINS } from "@/lib/chains";
@@ -19,24 +18,22 @@ import GweiExplainer from "@/components/GweiExplainer";
 import type { Chain } from "@/types";
 
 export const DEFAULT_THRESHOLD: Record<Chain, number> = {
-  ETH:  20,
+  ETH:   20,
   MATIC: 80,
-  ARB:  0.5,
+  ARB:   0.5,
 };
 
 const CHAIN_SUBTITLE: Record<Chain, string> = {
-  ETH:  "Real-time Ethereum gas fee optimizer",
+  ETH:   "Real-time Ethereum gas fee optimizer",
   MATIC: "Real-time Polygon gas fee optimizer",
-  ARB:  "Real-time Arbitrum gas fee optimizer",
+  ARB:   "Real-time Arbitrum gas fee optimizer",
 };
 
 export default function Dashboard() {
-  const { theme } = useTheme();
   const [chain, setChain] = useState<Chain>("ETH");
   const [alertThreshold, setAlertThreshold] = useState(DEFAULT_THRESHOLD["ETH"]);
 
-  const { gasData, history, countdown, isRefreshing, error, manualRefresh } =
-    useGasPolling(chain);
+  const { gasData, history, countdown, isRefreshing, error, manualRefresh } = useGasPolling(chain);
   const { price, priceChange, isLoading: priceLoading, ethPrice } = usePricePolling(chain);
   const priceLabel = PRICE_DISPLAY_LABEL[chain];
 
@@ -44,13 +41,13 @@ export default function Dashboard() {
     setAlertThreshold(DEFAULT_THRESHOLD[chain]);
   }, [chain]);
 
-  const chainCfg          = CHAINS[chain];
-  const tzAbbr            = getUserTimezoneAbbr();
-  const tzOffset          = getUserUTCOffset();
-  const pct               = (countdown / 60) * 100;
-  const circumference     = 2 * Math.PI * 8;
-  const isLoaded          = gasData.avg > 0;
-  const priceChangePos    = priceChange >= 0; // sudah include satuan, e.g. "ETH Price (ARB gas)"
+  const chainCfg       = CHAINS[chain];
+  const tzAbbr         = getUserTimezoneAbbr();
+  const tzOffset       = getUserUTCOffset();
+  const pct            = (countdown / 60) * 100;
+  const circumference  = 2 * Math.PI * 8;
+  const isLoaded       = gasData.avg > 0;
+  const priceChangePos = priceChange >= 0;
 
   return (
     <>
@@ -66,14 +63,14 @@ export default function Dashboard() {
                   <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
                   <span className="relative inline-flex size-2.5 rounded-full bg-emerald-400" />
                 </span>
-                <span className={`text-[10px] font-semibold uppercase tracking-[0.2em] ${theme === "dark" ? "text-white/30" : "text-black/30"}`}>
+                <span className="text-[10px] font-semibold uppercase tracking-[0.2em] th-text-faint">
                   Live · {tzAbbr} {tzOffset}
                 </span>
               </div>
-              <h1 className={`text-3xl sm:text-4xl font-black tracking-tight font-mono ${theme === "dark" ? "text-white" : "text-black"}`}>
+              <h1 className="text-3xl sm:text-4xl font-black tracking-tight font-mono th-text-primary">
                 Gas
                 <span
-                  className="ml-2 transition-none"
+                  className="ml-2"
                   style={{
                     backgroundImage: `linear-gradient(135deg, ${chainCfg.color}, ${chainCfg.color}99)`,
                     WebkitBackgroundClip: "text",
@@ -84,9 +81,7 @@ export default function Dashboard() {
                   Watch
                 </span>
               </h1>
-              <p className={`text-sm mt-1 ${theme === "dark" ? "text-white/40" : "text-black/40"}`}>
-                {CHAIN_SUBTITLE[chain]}
-              </p>
+              <p className="text-sm mt-1 th-text-faint">{CHAIN_SUBTITLE[chain]}</p>
             </div>
             <div className="flex items-center gap-2 flex-wrap">
               <ChainSelector active={chain} onChange={setChain} />
@@ -95,42 +90,30 @@ export default function Dashboard() {
           </header>
 
           {/* Price ticker */}
-          <div className={`flex items-center gap-3 mb-4 px-4 py-2.5 rounded-xl border transition-colors duration-300 ${
-            theme === "dark" ? "bg-white/[0.02] border-white/[0.07]" : "bg-white/60 border-black/[0.07] backdrop-blur-sm"
-          }`}>
-            <span className={`text-xs font-semibold uppercase tracking-widest ${theme === "dark" ? "text-white/40" : "text-black/40"}`}>
+          <div className="flex items-center gap-3 mb-4 px-4 py-2.5 rounded-xl border th-card th-border-card backdrop-blur-sm">
+            <span className="text-xs font-semibold uppercase tracking-widest th-text-faint">
               {priceLabel}
             </span>
             {priceLoading ? (
-              <span className={`text-xs font-mono animate-pulse ${theme === "dark" ? "text-white/30" : "text-black/30"}`}>
-                Fetching...
-              </span>
+              <span className="text-xs font-mono animate-pulse th-text-faint">Fetching...</span>
             ) : price > 0 ? (
               <>
-                <span className={`font-mono font-bold text-sm ${theme === "dark" ? "text-white" : "text-black"}`}>
+                <span className="font-mono font-bold text-sm th-text-primary">
                   ${price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
                 <span className={`text-xs font-mono font-semibold ${priceChangePos ? "text-emerald-400" : "text-red-400"}`}>
                   {priceChangePos ? "▲" : "▼"} {Math.abs(priceChange).toFixed(2)}%
                 </span>
-                <span className={`text-[10px] ml-auto ${theme === "dark" ? "text-white/20" : "text-black/25"}`}>
-                  via CoinGecko
-                </span>
+                <span className="text-[10px] ml-auto th-text-ultrafaint">via Binance / CoinGecko</span>
               </>
             ) : (
-              <span className={`text-xs font-mono ${theme === "dark" ? "text-white/30" : "text-black/30"}`}>
-                Unavailable
-              </span>
+              <span className="text-xs font-mono th-text-faint">Unavailable</span>
             )}
           </div>
 
           {/* Error banner */}
           {error && (
-            <div className={`mb-4 px-4 py-2.5 rounded-xl text-xs border ${
-              theme === "dark"
-                ? "bg-amber-400/10 border-amber-400/20 text-amber-400"
-                : "bg-amber-500/10 border-amber-500/20 text-amber-600"
-            }`}>
+            <div className="mb-4 px-4 py-2.5 rounded-xl text-xs border bg-amber-400/10 border-amber-400/20 text-amber-400">
               ⚠ {error}
             </div>
           )}
@@ -139,41 +122,33 @@ export default function Dashboard() {
           {!isLoaded ? (
             <div className="grid grid-cols-3 gap-3 sm:gap-4 mb-4">
               {[0, 1, 2].map((i) => (
-                <div key={i} className={`rounded-2xl border p-5 h-32 animate-pulse ${
-                  theme === "dark" ? "bg-white/[0.03] border-white/[0.08]" : "bg-white/70 border-black/[0.08]"
-                }`} />
+                <div key={i} className="rounded-2xl border p-5 h-32 animate-pulse th-card-solid th-border-muted" />
               ))}
             </div>
           ) : (
             <div className="grid grid-cols-3 gap-3 sm:gap-4 mb-4">
-              <GasCard title="Slow"     value={gasData.low}  subtitle="~5 min confirm"  accent="#10b981"      delay={0}   badge="Save" />
+              <GasCard title="Slow"     value={gasData.low}  subtitle="~5 min confirm"  accent="#10b981"       delay={0}   badge="Save" />
               <GasCard title="Standard" value={gasData.avg}  subtitle="~1 min confirm"  accent={chainCfg.color} delay={80} />
-              <GasCard title="Fast"     value={gasData.high} subtitle="~15 sec confirm" accent="#ef4444"      delay={160} badge="Priority" />
+              <GasCard title="Fast"     value={gasData.high} subtitle="~15 sec confirm" accent="#ef4444"       delay={160} badge="Priority" />
             </div>
           )}
 
           {/* Chart */}
-          <div className={`rounded-2xl border p-5 mb-4 transition-colors duration-300 animate-[fadeInUp_0.6s_ease-out_0.2s_both] ${
-            theme === "dark" ? "bg-white/[0.02] border-white/[0.07]" : "bg-white/60 border-black/[0.07] backdrop-blur-sm"
-          }`}>
+          <div className="rounded-2xl border p-5 mb-4 animate-[fadeInUp_0.6s_ease-out_0.2s_both] th-card th-border-card backdrop-blur-sm">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <p className={`text-xs font-semibold uppercase tracking-widest ${theme === "dark" ? "text-white/40" : "text-black/40"}`}>
-                  Gas History
-                </p>
-                <p className={`text-xs mt-0.5 ${theme === "dark" ? "text-white/25" : "text-black/30"}`}>
+                <p className="text-xs font-semibold uppercase tracking-widest th-text-muted">Gas History</p>
+                <p className="text-xs mt-0.5 th-text-faint">
                   Avg Gwei · {tzAbbr} time · last {history.length} snapshots
                 </p>
               </div>
               <div className="flex items-center gap-3">
                 <div className="relative flex items-center justify-center size-8">
                   <svg className="absolute inset-0 -rotate-90" width="32" height="32">
-                    <circle cx="16" cy="16" r="8" fill="none" stroke={theme === "dark" ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"} strokeWidth="2" />
+                    <circle cx="16" cy="16" r="8" fill="none" stroke="var(--border-card)" strokeWidth="2" />
                     <circle
                       cx="16" cy="16" r="8" fill="none"
-                      stroke={chainCfg.color}
-                      strokeWidth="2"
-                      strokeLinecap="round"
+                      stroke={chainCfg.color} strokeWidth="2" strokeLinecap="round"
                       strokeDasharray={circumference}
                       strokeDashoffset={circumference - (pct / 100) * circumference}
                       className="transition-[stroke-dashoffset] duration-1000 linear"
@@ -186,15 +161,10 @@ export default function Dashboard() {
                 <button
                   onClick={manualRefresh}
                   disabled={isRefreshing}
-                  className={`
-                    flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold
-                    border transition-all duration-200
-                    hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed
-                    ${theme === "dark"
-                      ? "bg-white/5 border-white/10 text-white/70 hover:bg-white/10"
-                      : "bg-black/5 border-black/10 text-black/60 hover:bg-black/10"
-                    }
-                  `}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold
+                    border th-muted th-border-muted th-text-secondary th-muted-hover
+                    transition-[transform] duration-150 hover:scale-105 active:scale-95
+                    disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <RefreshCw size={12} className={isRefreshing ? "animate-spin" : ""} />
                   Refresh
@@ -222,45 +192,33 @@ export default function Dashboard() {
 
           {/* Footer */}
           <footer className="mt-8 pb-4">
-            <p className={`text-[11px] font-mono text-center ${theme === "dark" ? "text-white/20" : "text-black/25"}`}>
+            <p className="text-[11px] font-mono text-center th-text-ultrafaint">
               {isLoaded
                 ? `Last updated: ${formatLocalDateTime(new Date(gasData.fetchedAt))} ${tzAbbr}`
                 : "Initializing..."
               }{" "}
               · Auto-refresh every 1 min
             </p>
-            <div className="mt-5 flex justify-center">
+            <div className="mt-4 flex justify-center">
               <a
                 href="https://rayn.web.id"
                 target="_blank"
                 rel="noopener noreferrer"
-                className={`
-                  group relative inline-flex items-center gap-4 px-8 py-3.5
-                  rounded-2xl border transition-all duration-300
-                  hover:scale-[1.03] active:scale-[0.98]
-                  ${theme === "dark"
-                    ? "bg-white/[0.04] border-white/10 hover:bg-white/[0.08] hover:border-white/[0.18]"
-                    : "bg-black/[0.03] border-black/10 hover:bg-black/[0.06] hover:border-black/[0.18]"
-                  }
-                `}
+                className="group inline-flex items-center gap-2 px-4 py-2 rounded-full border th-border-muted
+                  transition-[transform,border-color,background] duration-200
+                  hover:scale-[1.04] active:scale-[0.97] th-muted hover:th-muted-hover"
               >
+                {/* dot avatar kecil */}
                 <span
-                  className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
-                  style={{ boxShadow: `0 0 32px 0 ${chainCfg.color}22` }}
-                />
-                <span
-                  className="relative size-8 rounded-xl flex items-center justify-center text-sm font-black text-white shrink-0"
-                  style={{ background: `linear-gradient(135deg, ${chainCfg.color}, ${chainCfg.color}88)` }}
+                  className="size-5 rounded-full flex items-center justify-center text-[10px] font-black text-white shrink-0"
+                  style={{ background: `linear-gradient(135deg, ${chainCfg.color}, ${chainCfg.color}77)` }}
                 >
                   R
                 </span>
-                <span className="relative flex flex-col leading-snug">
-                  <span className={`text-sm font-bold tracking-wide ${theme === "dark" ? "text-white/70 group-hover:text-white/90" : "text-black/60 group-hover:text-black/85"} transition-colors duration-200`}>
-                    Built by Rayn
-                  </span>
-                  <span className={`text-xs tracking-wider ${theme === "dark" ? "text-white/30 group-hover:text-white/50" : "text-black/35 group-hover:text-black/55"} transition-colors duration-200`}>
-                    rayn.web.id ↗
-                  </span>
+                <span className="text-[11px] font-medium th-text-faint group-hover:th-text-muted transition-colors duration-200">
+                  built by{" "}
+                  <span className="font-semibold" style={{ color: chainCfg.color }}>rayn.web.id</span>
+                  {" "}↗
                 </span>
               </a>
             </div>

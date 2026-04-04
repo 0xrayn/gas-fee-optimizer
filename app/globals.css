@@ -1,208 +1,140 @@
 @import "tailwindcss";
 
-/* ── Custom keyframes ─────────────────────────────────── */
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+/* ─────────────────────────────────────────────────────────────────────────
+   CSS VARIABLES — satu-satunya sumber kebenaran warna dark/light.
+   Semua komponen pakai var() ini, bukan useTheme() di React.
+   Transisi theme jadi PURE CSS → zero React re-render, zero lag.
+   ───────────────────────────────────────────────────────────────────────── */
+
+:root,
+[data-theme="dark"] {
+  --bg-page:          #030712;
+  --bg-card:          rgba(255, 255, 255, 0.02);
+  --bg-card-hover:    rgba(255, 255, 255, 0.05);
+  --bg-card-solid:    rgba(255, 255, 255, 0.03);
+  --bg-muted:         rgba(255, 255, 255, 0.05);
+  --bg-muted-hover:   rgba(255, 255, 255, 0.10);
+  --bg-input:         rgba(255, 255, 255, 0.05);
+
+  --border-card:      rgba(255, 255, 255, 0.07);
+  --border-card-hover:rgba(255, 255, 255, 0.16);
+  --border-muted:     rgba(255, 255, 255, 0.08);
+  --border-input:     rgba(255, 255, 255, 0.10);
+
+  --text-primary:     rgba(255, 255, 255, 1);
+  --text-secondary:   rgba(255, 255, 255, 0.70);
+  --text-muted:       rgba(255, 255, 255, 0.40);
+  --text-faint:       rgba(255, 255, 255, 0.25);
+  --text-ultrafaint:  rgba(255, 255, 255, 0.20);
+
+  --chart-grid:       rgba(255, 255, 255, 0.04);
+  --chart-text:       rgba(255, 255, 255, 0.30);
+  --chart-tooltip-bg: rgba(15, 22, 41, 0.92);
+  --chart-tooltip-border: rgba(255, 255, 255, 0.10);
+  --chart-dot-stroke: #030712;
+
+  --glow-tl: rgba(98, 126, 234, 0.10);
+  --glow-br: rgba(16, 185, 129, 0.08);
+  --grid-opacity: 0.03;
+
+  color-scheme: dark;
 }
 
-@keyframes fadeInDown {
-  from {
-    opacity: 0;
-    transform: translateY(-16px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+[data-theme="light"] {
+  --bg-page:          #f0f4ff;
+  --bg-card:          rgba(255, 255, 255, 0.60);
+  --bg-card-hover:    rgba(255, 255, 255, 0.80);
+  --bg-card-solid:    rgba(255, 255, 255, 0.70);
+  --bg-muted:         rgba(0, 0, 0, 0.04);
+  --bg-muted-hover:   rgba(0, 0, 0, 0.08);
+  --bg-input:         rgba(0, 0, 0, 0.05);
+
+  --border-card:      rgba(0, 0, 0, 0.07);
+  --border-card-hover:rgba(0, 0, 0, 0.15);
+  --border-muted:     rgba(0, 0, 0, 0.08);
+  --border-input:     rgba(0, 0, 0, 0.10);
+
+  --text-primary:     rgba(0, 0, 0, 1);
+  --text-secondary:   rgba(0, 0, 0, 0.70);
+  --text-muted:       rgba(0, 0, 0, 0.40);
+  --text-faint:       rgba(0, 0, 0, 0.30);
+  --text-ultrafaint:  rgba(0, 0, 0, 0.25);
+
+  --chart-grid:       rgba(0, 0, 0, 0.05);
+  --chart-text:       rgba(0, 0, 0, 0.35);
+  --chart-tooltip-bg: rgba(255, 255, 255, 0.92);
+  --chart-tooltip-border: rgba(0, 0, 0, 0.10);
+  --chart-dot-stroke: #ffffff;
+
+  --glow-tl: rgba(98, 126, 234, 0.15);
+  --glow-br: rgba(52, 211, 153, 0.12);
+  --grid-opacity: 0.06;
+
+  color-scheme: light;
 }
 
-@keyframes float {
-  0%, 100% {
-    transform: translateY(0px) scale(1);
-    opacity: 0.4;
-  }
-  50% {
-    transform: translateY(-18px) scale(1.15);
-    opacity: 0.8;
-  }
-}
-
-@keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
-}
-
-@keyframes pulse-ring {
-  0% { transform: scale(1); opacity: 0.6; }
-  100% { transform: scale(2.2); opacity: 0; }
-}
-
-/* ── Tailwind v4 theme extension ──────────────────────── */
-@theme {
-  --font-mono: "JetBrains Mono", ui-monospace, monospace;
-  --font-sans: "Outfit", system-ui, sans-serif;
-
-  --animate-fadeInUp: fadeInUp 0.6s ease-out both;
-  --animate-fadeInDown: fadeInDown 0.5s ease-out both;
-  --animate-float: float 6s ease-in-out infinite;
-  --animate-float-slow: float 8s ease-in-out infinite 2s;
-  --animate-float-slower: float 9s ease-in-out infinite 4s;
-  --animate-shimmer: shimmer 2s linear infinite;
-  --animate-pulse-ring: pulse-ring 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
-}
-
-/* ── Base styles ──────────────────────────────────────── */
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-}
-
-html {
-  scroll-behavior: smooth;
-}
-
-body {
-  font-family: var(--font-sans);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  transition: background-color 0.4s ease, color 0.4s ease;
-}
-
-/* Smooth transitions for theme switching */
-*,
-*::before,
-*::after {
+/* Transisi global — semua elemen ikut smooth saat data-theme berubah */
+*, *::before, *::after {
   transition-property: background-color, border-color, color, fill, stroke;
   transition-duration: 200ms;
   transition-timing-function: ease;
 }
-
-/* Exceptions — don't apply blanket transition to transforms/opacity (breaks animations) */
-.no-transition-override {
-  transition: none !important;
+/* Kecualikan elemen yang TIDAK boleh ada transition (animasi, transform) */
+[class*="animate-"],
+[class*="transition-"],
+[class*="duration-"] {
+  /* Biarkan Tailwind classes mereka sendiri yang mengontrol */
 }
 
-/* ── Scrollbar ─────────────────────────────────────────── */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+/* ── Page background ─────────────────────────────────────────────────── */
+body {
+  background-color: var(--bg-page);
 }
 
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-  background: rgba(99, 126, 234, 0.25);
-  border-radius: 99px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(99, 126, 234, 0.45);
-}
-
-/* ── Number input arrows ──────────────────────────────── */
-input[type="number"]::-webkit-inner-spin-button,
-input[type="number"]::-webkit-outer-spin-button {
-  opacity: 0.3;
-}
-
-/* ── Selection color ──────────────────────────────────── */
-::selection {
-  background: rgba(99, 126, 234, 0.3);
-  color: inherit;
-}
-
-/* ── Focus ring override ──────────────────────────────── */
-:focus-visible {
-  outline: 2px solid rgba(99, 126, 234, 0.6);
-  outline-offset: 2px;
-  border-radius: 8px;
-}
-
-/* ── Dark mode base ───────────────────────────────────── */
-.dark body {
-  color: rgba(255, 255, 255, 0.88);
-}
-
-/* ── Glassmorphism utility ────────────────────────────── */
-.glass-dark {
-  background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.glass-light {
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(0, 0, 0, 0.08);
-}
-
-/* ── Shimmer loading skeleton ─────────────────────────── */
-.shimmer {
-  background: linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0.03) 25%,
-    rgba(255, 255, 255, 0.08) 50%,
-    rgba(255, 255, 255, 0.03) 75%
-  );
-  background-size: 200% 100%;
-  animation: shimmer 1.8s ease-in-out infinite;
-}
-
-.dark .shimmer {
-  background: linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0.03) 25%,
-    rgba(255, 255, 255, 0.07) 50%,
-    rgba(255, 255, 255, 0.03) 75%
-  );
-  background-size: 200% 100%;
-}
-
-/* ── AnimatedBackground: theme via CSS data-theme, zero JS re-render ──── */
+/* ── AnimatedBackground (pure CSS, zero JS re-render) ────────────────── */
 .animated-bg-base {
-  background: #030712;
-  transition: background 250ms ease;
+  background: var(--bg-page);
 }
-[data-theme="light"] .animated-bg-base {
-  background: #f0f4ff;
-}
-
 .animated-bg-glow-tl {
-  background: rgba(98, 126, 234, 0.10);
-  transition: background 250ms ease;
+  background: var(--glow-tl);
 }
-[data-theme="light"] .animated-bg-glow-tl {
-  background: rgba(98, 126, 234, 0.15);
-}
-
 .animated-bg-glow-br {
-  background: rgba(16, 185, 129, 0.08);
-  transition: background 250ms ease;
+  background: var(--glow-br);
 }
-[data-theme="light"] .animated-bg-glow-br {
-  background: rgba(52, 211, 153, 0.12);
-}
-
 .animated-bg-grid {
-  opacity: 0.03;
+  opacity: var(--grid-opacity);
   background-image:
     linear-gradient(rgba(99, 126, 234, 0.8) 1px, transparent 1px),
     linear-gradient(90deg, rgba(99, 126, 234, 0.8) 1px, transparent 1px);
   background-size: 60px 60px;
-  transition: opacity 250ms ease;
 }
-[data-theme="light"] .animated-bg-grid {
-  opacity: 0.06;
+
+/* ── Utility classes pakai CSS vars ─────────────────────────────────── */
+.th-card          { background: var(--bg-card);       border-color: var(--border-card);   }
+.th-card-solid    { background: var(--bg-card-solid);  border-color: var(--border-muted);  }
+.th-muted         { background: var(--bg-muted); }
+.th-muted-hover:hover { background: var(--bg-muted-hover); }
+.th-input         { background: var(--bg-input);      border-color: var(--border-input);  }
+.th-text-primary  { color: var(--text-primary); }
+.th-text-secondary{ color: var(--text-secondary); }
+.th-text-muted    { color: var(--text-muted); }
+.th-text-faint    { color: var(--text-faint); }
+.th-text-ultrafaint { color: var(--text-ultrafaint); }
+.th-border-card   { border-color: var(--border-card); }
+.th-border-muted  { border-color: var(--border-muted); }
+
+/* ── Keyframes ───────────────────────────────────────────────────────── */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-8px); }
+}
+
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
