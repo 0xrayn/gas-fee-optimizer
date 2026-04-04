@@ -14,7 +14,7 @@ export function getUserTimezoneAbbr(): string {
     return parts.find((p) => p.type === "timeZoneName")?.value ?? tz;
 }
 
-export function getUserUTCoffset(): string {
+export function getUserUTCOffset(): string {
     const offset = -new Date().getTimezoneOffset();
     const h = Math.floor(Math.abs(offset) / 60);
     const m = Math.abs(offset) % 60;

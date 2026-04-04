@@ -9,6 +9,7 @@ import {
   ResponsiveContainer,
   CartesianGrid,
   ReferenceLine,
+  TooltipProps,
 } from "recharts";
 import { useTheme } from "@/components/ThemeProvider";
 import type { GasHistory } from "@/types";
@@ -19,9 +20,16 @@ interface GasChartProps {
   avgValue?: number;
 }
 
-function CustomTooltip({ active, payload, label }: any) {
+// Type the tooltip props according to your data
+type CustomTooltipProps = TooltipProps<number, string> & {
+  payload?: { value: number; name?: string }[];
+  label?: string;
+};
+
+function CustomTooltip({ active, payload, label }: CustomTooltipProps) {
   const { theme } = useTheme();
   if (!active || !payload?.length) return null;
+
   return (
     <div
       className={`rounded-xl border px-4 py-3 text-sm shadow-2xl backdrop-blur-md ${
@@ -54,7 +62,9 @@ export default function GasChart({ data, accent, avgValue }: GasChartProps) {
               <stop offset="100%" stopColor={accent} stopOpacity={0.0} />
             </linearGradient>
           </defs>
+
           <CartesianGrid stroke={gridColor} strokeDasharray="4 4" vertical={false} />
+
           <XAxis
             dataKey="time"
             tick={{ fill: textColor, fontSize: 10, fontFamily: "monospace" }}
@@ -62,13 +72,16 @@ export default function GasChart({ data, accent, avgValue }: GasChartProps) {
             tickLine={false}
             interval="preserveStartEnd"
           />
+
           <YAxis
             tick={{ fill: textColor, fontSize: 10, fontFamily: "monospace" }}
             axisLine={false}
             tickLine={false}
             tickFormatter={(v) => (v < 1 ? v.toFixed(2) : Math.round(v).toString())}
           />
+
           <Tooltip content={<CustomTooltip />} />
+
           {avgValue && (
             <ReferenceLine
               y={avgValue}
@@ -77,6 +90,7 @@ export default function GasChart({ data, accent, avgValue }: GasChartProps) {
               strokeOpacity={0.4}
             />
           )}
+
           <Area
             type="monotone"
             dataKey="gas"

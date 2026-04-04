@@ -15,17 +15,15 @@ const ThemeContext = createContext<ThemeCtx>({
 });
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<Theme>("dark");
+  const [theme, setTheme] = useState<Theme>(() => {
+    const stored = typeof window !== "undefined" ? localStorage.getItem("gw-theme") : null;
+    if (stored === "dark" || stored === "light") return stored;
 
-  useEffect(() => {
-    const stored = localStorage.getItem("gw-theme") as Theme | null;
-    const preferred = window.matchMedia("(prefers-color-scheme: dark)").matches
-      ? "dark"
-      : "light";
-    const resolved = stored ?? preferred;
-    setTheme(resolved);
-    applyTheme(resolved);
-  }, []);
+    if (typeof window !== "undefined" && window.matchMedia("(prefers-color-scheme: dark)").matches) {
+      return "dark";
+    }
+    return "light";
+  });
 
   function applyTheme(t: Theme) {
     const root = document.documentElement;
@@ -33,11 +31,14 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     root.style.colorScheme = t;
   }
 
+  useEffect(() => {
+    applyTheme(theme);
+  }, [theme]);
+
   function toggle() {
-    setTheme((prev) => {
+    setTheme((prev: Theme) => {
       const next = prev === "dark" ? "light" : "dark";
       localStorage.setItem("gw-theme", next);
-      applyTheme(next);
       return next;
     });
   }
