@@ -23,19 +23,25 @@ export default function AlertPanel({
 }: AlertPanelProps) {
   const { theme } = useTheme();
   const chainCfg = CHAINS[chain];
-  const [input, setInput] = useState(String(threshold));
-  const [saved, setSaved] = useState(false);
-  const [enabled, setEnabled] = useState(false);
+
+  const [input, setInput]       = useState(String(threshold));
+  const [saved, setSaved]       = useState(false);
+  const [enabled, setEnabled]   = useState(false);
   const [statusMsg, setStatusMsg] = useState("");
 
-  // permState in ref → no setState in effect, no hydration mismatch
   const permRef = useRef<PermState>("default");
-  const [tick, setTick] = useState(0);
+  const [tick, setTick]         = useState(0);
+  const lastAlertedRef          = useRef(0);
+  const prevGasRef              = useRef(0);
 
-  const lastAlertedRef = useRef(0);
-  const prevGasRef = useRef(currentGas);
+  useEffect(() => {
+    setInput(String(threshold));
+    setSaved(false);
+    setStatusMsg("");
+    prevGasRef.current    = 0;
+    lastAlertedRef.current = 0;
+  }, [chain, threshold]);
 
-  // Sync real browser permission once after mount
   useEffect(() => {
     const real: PermState = !("Notification" in window)
       ? "unsupported"
@@ -47,25 +53,24 @@ export default function AlertPanel({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Monitor gas and fire notification
   useEffect(() => {
     if (!enabled || permRef.current !== "granted" || currentGas <= 0) return;
 
     const wasAbove = prevGasRef.current > threshold;
-    const isBelow = currentGas < threshold;
-    const now = Date.now();
+    const isBelow  = currentGas < threshold;
+    const now      = Date.now();
     const cooldown = 5 * 60 * 1000;
 
     if (isBelow && wasAbove && now - lastAlertedRef.current > cooldown) {
       try {
         new Notification(`⛽ ${chain} Gas Alert!`, {
-          body: `Gas is now ${currentGas.toFixed(1)} Gwei — below your threshold of ${threshold} Gwei.`,
+          body: `Gas is now ${currentGas.toFixed(2)} Gwei — below your threshold of ${threshold} Gwei.`,
           icon: "/favicon.ico",
-          tag: "gas-alert",
+          tag: `gas-alert-${chain}`,
         });
         lastAlertedRef.current = now;
         setTimeout(() => {
-          setStatusMsg(`Alert sent: ${currentGas.toFixed(1)} Gwei`);
+          setStatusMsg(`Alert sent: ${currentGas.toFixed(2)} Gwei`);
           setTimeout(() => setStatusMsg(""), 4000);
         }, 0);
       } catch {
@@ -76,7 +81,7 @@ export default function AlertPanel({
     prevGasRef.current = currentGas;
   }, [currentGas, threshold, enabled, chain, tick]);
 
-  const permState = permRef.current;
+  const permState    = permRef.current;
 
   async function requestPermissionAndEnable() {
     if (!("Notification" in window)) {
@@ -107,7 +112,7 @@ export default function AlertPanel({
         setStatusMsg("Gas Alert enabled ✓");
         setTimeout(() => setStatusMsg(""), 3000);
         new Notification("⛽ GasWatch Alerts Active", {
-          body: `You'll be notified when gas drops below ${threshold} Gwei.`,
+          body: `You'll be notified when ${chain} gas drops below ${threshold} Gwei.`,
           icon: "/favicon.ico",
           tag: "gas-alert-test",
         });
@@ -144,10 +149,10 @@ export default function AlertPanel({
     }
   }
 
-  const isActive = enabled && permState === "granted";
-  const isDenied = permState === "denied";
+  const isActive     = enabled && permState === "granted";
+  const isDenied     = permState === "denied";
   const isUnsupported = permState === "unsupported";
-  const gasIsBelow = currentGas > 0 && currentGas < threshold;
+  const gasIsBelow   = currentGas > 0 && currentGas < threshold;
 
   return (
     <div className={`rounded-2xl border p-5 transition-colors duration-300 ${
@@ -156,7 +161,7 @@ export default function AlertPanel({
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <p className={`text-xs font-semibold uppercase tracking-widest ${theme === "dark" ? "text-white/40" : "text-black/40"}`}>
-            Gas Alert
+            Gas Alert — {chainCfg.label}
           </p>
           {isActive && gasIsBelow && (
             <span className="flex size-1.5 rounded-full bg-emerald-400 animate-ping" />
@@ -167,8 +172,8 @@ export default function AlertPanel({
           disabled={isUnsupported}
           title={
             isUnsupported ? "Notifications not supported in this browser"
-            : isDenied ? "Notification permission denied"
-            : isActive ? "Disable gas alert"
+            : isDenied     ? "Notification permission denied"
+            : isActive     ? "Disable gas alert"
             : "Enable gas alert"
           }
           className={`p-1.5 rounded-lg transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed ${
@@ -215,9 +220,9 @@ export default function AlertPanel({
       <div className="flex gap-2">
         <input
           type="number"
-          min="1"
-          max="999"
-          step="0.5"
+          min="0.01"
+          max="9999"
+          step={chain === "ARB" ? "0.01" : "1"}
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleSave()}

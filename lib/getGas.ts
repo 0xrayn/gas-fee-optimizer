@@ -10,22 +10,20 @@ const CHAIN_ID: Record<Chain, number> = {
 
 const SIM_BASE: Record<Chain, { base: number; spread: number }> = {
   ETH:   { base: 18,   spread: 12   },
-  MATIC: { base: 35,   spread: 25   },
-  ARB:   { base: 0.08, spread: 0.12 },
+  MATIC: { base: 80,   spread: 40   },
+  ARB:   { base: 0.08, spread: 0.06 },
 };
 
 function simulateGas(chain: Chain): GasData {
   const cfg = SIM_BASE[chain];
   const noise = () => (Math.random() - 0.5) * cfg.spread;
-  const low  = Math.max(0.01, parseFloat((cfg.base + noise()).toFixed(3)));
-  const avg  = parseFloat((low + cfg.spread * 0.35 + Math.random() * 3).toFixed(3));
-  const high = parseFloat((avg + cfg.spread * 0.25 + Math.random() * 2).toFixed(3));
+  const low  = Math.max(0.01, parseFloat((cfg.base + noise()).toFixed(4)));
+  const avg  = parseFloat((low + cfg.spread * 0.35 + Math.random() * cfg.spread * 0.2).toFixed(4));
+  const high = parseFloat((avg + cfg.spread * 0.25 + Math.random() * cfg.spread * 0.15).toFixed(4));
   return { low, avg, high, chain, fetchedAt: new Date() };
 }
 
 export async function getGasData(chain: Chain = "ETH"): Promise<GasData> {
-  if (chain === "ARB") return simulateGas(chain);
-
   if (!API_KEY || API_KEY === "YourApiKeyToken") {
     return simulateGas(chain);
   }
@@ -40,7 +38,7 @@ export async function getGasData(chain: Chain = "ETH"): Promise<GasData> {
     if (!res.ok) throw new Error("HTTP " + res.status);
 
     const json = await res.json();
-    if (json.status !== "1") throw new Error(json.message);
+    if (json.status !== "1") throw new Error(json.message ?? "API error");
 
     const r = json.result;
     const low     = parseFloat(r.SafeGasPrice);

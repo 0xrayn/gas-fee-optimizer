@@ -3,62 +3,57 @@
 import { useState, useEffect, useRef } from "react";
 import type { Chain } from "@/types";
 
-// CoinGecko IDs — ARB uses "arbitrum" token for price display
-const COINGECKO_IDS: Record<Chain, string> = {
-  ETH: "ethereum",
-  MATIC: "matic-network",
-  ARB: "arbitrum",  // ARB governance token
+export const PRICE_DISPLAY_LABEL: Record<Chain, string> = {
+  ETH:   "ETH",
+  MATIC: "MATIC",
+  ARB:   "ARB",
 };
 
 interface PriceData {
   price: number;
   priceChange: number;
   isLoading: boolean;
+  // Untuk ARB: kita juga butuh harga ETH supaya TxEstimator bisa hitung USD fee dengan benar
+  ethPrice: number;
 }
 
-// Module-level cache survives chain switches without re-mounting
-const priceCache: Partial<Record<Chain, { price: number; priceChange: number; ts: number }>> = {};
+const priceCache: Partial<Record<Chain, { price: number; priceChange: number; ethPrice: number; ts: number }>> = {};
 const CACHE_TTL_MS = 55_000;
 
 export function usePricePolling(chain: Chain): PriceData {
   const initCache = priceCache[chain];
-  const [price, setPrice] = useState(initCache?.price ?? 0);
+  const [price, setPrice]           = useState(initCache?.price ?? 0);
   const [priceChange, setPriceChange] = useState(initCache?.priceChange ?? 0);
-  const [isLoading, setIsLoading] = useState(!initCache);
+  const [ethPrice, setEthPrice]     = useState(initCache?.ethPrice ?? 0);
+  const [isLoading, setIsLoading]   = useState(!initCache);
+
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const chainRef = useRef(chain);
 
   async function fetchPrice(c: Chain) {
-    const id = COINGECKO_IDS[c];
     try {
-      const res = await fetch(
-        `https://api.coingecko.com/api/v3/simple/price?ids=${id}&vs_currencies=usd&include_24hr_change=true`,
-        { cache: "no-store" }
-      );
+      const res = await fetch(`/api/price?chain=${c}`, { cache: "no-store" });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-      const entry = data[id];
-      if (entry) {
-        const p = entry.usd ?? 0;
-        const pc = entry.usd_24h_change ?? 0;
-        priceCache[c] = { price: p, priceChange: pc, ts: Date.now() };
-        if (chainRef.current === c) {
-          setPrice(p);
-          setPriceChange(pc);
-          setIsLoading(false);
-        }
-      } else {
-        // ID found but no data — mark unavailable
-        if (chainRef.current === c) {
-          setPrice(0);
-          setPriceChange(0);
-          setIsLoading(false);
-        }
-      }
+
+      if (chainRef.current !== c) return;
+
+      priceCache[c] = {
+        price: data.price,
+        priceChange: data.priceChange,
+        ethPrice: data.ethPrice ?? data.price,
+        ts: Date.now(),
+      };
+
+      setPrice(data.price);
+      setPriceChange(data.priceChange);
+      setEthPrice(data.ethPrice ?? data.price);
+      setIsLoading(false);
     } catch {
       if (chainRef.current === c) {
         setPrice(0);
         setPriceChange(0);
+        setEthPrice(0);
         setIsLoading(false);
       }
     }
@@ -67,23 +62,24 @@ export function usePricePolling(chain: Chain): PriceData {
   useEffect(() => {
     chainRef.current = chain;
 
-    // Show cached value instantly (zero flicker on chain switch)
     const cached = priceCache[chain];
-    const now = Date.now();
+    const now    = Date.now();
 
     if (cached && now - cached.ts < CACHE_TTL_MS) {
       setPrice(cached.price);
       setPriceChange(cached.priceChange);
+      setEthPrice(cached.ethPrice);
       setIsLoading(false);
     } else {
-      // Show stale cache while fetching fresh data
       if (cached) {
         setPrice(cached.price);
         setPriceChange(cached.priceChange);
+        setEthPrice(cached.ethPrice);
         setIsLoading(false);
       } else {
         setPrice(0);
         setPriceChange(0);
+        setEthPrice(0);
         setIsLoading(true);
       }
       fetchPrice(chain);
@@ -98,5 +94,5 @@ export function usePricePolling(chain: Chain): PriceData {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chain]);
 
-  return { price, priceChange, isLoading };
+  return { price, priceChange, isLoading, ethPrice };
 }

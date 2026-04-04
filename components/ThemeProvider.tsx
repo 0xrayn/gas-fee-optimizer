@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
 
 type Theme = "dark" | "light";
 
@@ -14,36 +14,43 @@ const ThemeContext = createContext<ThemeCtx>({
   toggle: () => {},
 });
 
-function getInitialTheme(): Theme {
-  const stored = localStorage.getItem("gw-theme") as Theme | null;
-  if (stored === "dark" || stored === "light") return stored;
-  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-}
-
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<Theme>("dark");
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    const resolved = getInitialTheme();
-    if (resolved !== theme) {
-      setTheme(resolved);
+    // Baca preference setelah mount (client-side only)
+    try {
+      const stored = localStorage.getItem("gw-theme") as Theme | null;
+      if (stored === "dark" || stored === "light") {
+        setTheme(stored);
+      } else if (window.matchMedia("(prefers-color-scheme: light)").matches) {
+        setTheme("light");
+      }
+    } catch {
+      // ignore
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    setMounted(true);
   }, []);
 
   useEffect(() => {
+    if (!mounted) return;
     const root = document.documentElement;
-    root.classList.toggle("dark", theme === "dark");
+    if (theme === "dark") {
+      root.classList.add("dark");
+    } else {
+      root.classList.remove("dark");
+    }
     root.style.colorScheme = theme;
-  }, [theme]);
+  }, [theme, mounted]);
 
-  function toggle() {
-    setTheme((prev: Theme) => {
+  const toggle = useCallback(() => {
+    setTheme((prev) => {
       const next = prev === "dark" ? "light" : "dark";
-      localStorage.setItem("gw-theme", next);
+      try { localStorage.setItem("gw-theme", next); } catch { /* ignore */ }
       return next;
     });
-  }
+  }, []);
 
   return (
     <ThemeContext.Provider value={{ theme, toggle }}>

@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { RefreshCw } from "lucide-react";
 import { useTheme } from "@/components/ThemeProvider";
 import { useGasPolling } from "@/hooks/useGasPolling";
-import { usePricePolling } from "@/hooks/usePricePolling";
+import { usePricePolling, PRICE_DISPLAY_LABEL } from "@/hooks/usePricePolling";
 import { CHAINS } from "@/lib/chains";
 import { formatLocalDateTime, getUserTimezoneAbbr, getUserUTCOffset } from "@/lib/timezone";
 import AnimatedBackground from "@/components/AnimatedBackground";
@@ -18,34 +18,43 @@ import AlertPanel from "@/components/AlertPanel";
 import GweiExplainer from "@/components/GweiExplainer";
 import type { Chain } from "@/types";
 
+export const DEFAULT_THRESHOLD: Record<Chain, number> = {
+  ETH:  20,
+  MATIC: 80,
+  ARB:  0.5,
+};
+
 const CHAIN_SUBTITLE: Record<Chain, string> = {
-  ETH: "Real-time Ethereum gas fee optimizer",
+  ETH:  "Real-time Ethereum gas fee optimizer",
   MATIC: "Real-time Polygon gas fee optimizer",
-  ARB: "Real-time Arbitrum gas fee optimizer",
+  ARB:  "Real-time Arbitrum gas fee optimizer",
 };
 
 export default function Dashboard() {
   const { theme } = useTheme();
   const [chain, setChain] = useState<Chain>("ETH");
-  const [alertThreshold, setAlertThreshold] = useState(20);
+  const [alertThreshold, setAlertThreshold] = useState(DEFAULT_THRESHOLD["ETH"]);
 
   const { gasData, history, countdown, isRefreshing, error, manualRefresh } =
     useGasPolling(chain);
-  const { price, priceChange, isLoading: priceLoading } = usePricePolling(chain);
+  const { price, priceChange, isLoading: priceLoading, ethPrice } = usePricePolling(chain);
+  const priceLabel = PRICE_DISPLAY_LABEL[chain];
 
-  const chainCfg = CHAINS[chain];
-  const tzAbbr = getUserTimezoneAbbr();
-  const tzOffset = getUserUTCOffset();
+  useEffect(() => {
+    setAlertThreshold(DEFAULT_THRESHOLD[chain]);
+  }, [chain]);
 
-  const pct = (countdown / 10) * 100;
-  const circumference = 2 * Math.PI * 8;
-  const isLoaded = gasData.avg > 0;
-  const priceChangePositive = priceChange >= 0;
+  const chainCfg          = CHAINS[chain];
+  const tzAbbr            = getUserTimezoneAbbr();
+  const tzOffset          = getUserUTCOffset();
+  const pct               = (countdown / 10) * 100;
+  const circumference     = 2 * Math.PI * 8;
+  const isLoaded          = gasData.avg > 0;
+  const priceChangePos    = priceChange >= 0; // sudah include satuan, e.g. "ETH Price (ARB gas)"
 
   return (
     <>
       <AnimatedBackground />
-
       <div className="min-h-screen px-4 py-8 sm:px-8">
         <div className="max-w-5xl mx-auto">
 
@@ -63,11 +72,10 @@ export default function Dashboard() {
               </div>
               <h1 className={`text-3xl sm:text-4xl font-black tracking-tight font-mono ${theme === "dark" ? "text-white" : "text-black"}`}>
                 Gas
-                {/* Use a <span> with inline style only — no Tailwind dynamic color class */}
                 <span
                   className="ml-2 transition-none"
                   style={{
-                    background: `linear-gradient(135deg, ${chainCfg.color}, ${chainCfg.color}99)`,
+                    backgroundImage: `linear-gradient(135deg, ${chainCfg.color}, ${chainCfg.color}99)`,
                     WebkitBackgroundClip: "text",
                     WebkitTextFillColor: "transparent",
                     backgroundClip: "text",
@@ -91,7 +99,7 @@ export default function Dashboard() {
             theme === "dark" ? "bg-white/[0.02] border-white/[0.07]" : "bg-white/60 border-black/[0.07] backdrop-blur-sm"
           }`}>
             <span className={`text-xs font-semibold uppercase tracking-widest ${theme === "dark" ? "text-white/40" : "text-black/40"}`}>
-              {chainCfg.nativeCurrency} Price
+              {priceLabel}
             </span>
             {priceLoading ? (
               <span className={`text-xs font-mono animate-pulse ${theme === "dark" ? "text-white/30" : "text-black/30"}`}>
@@ -102,8 +110,8 @@ export default function Dashboard() {
                 <span className={`font-mono font-bold text-sm ${theme === "dark" ? "text-white" : "text-black"}`}>
                   ${price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
-                <span className={`text-xs font-mono font-semibold ${priceChangePositive ? "text-emerald-400" : "text-red-400"}`}>
-                  {priceChangePositive ? "▲" : "▼"} {Math.abs(priceChange).toFixed(2)}%
+                <span className={`text-xs font-mono font-semibold ${priceChangePos ? "text-emerald-400" : "text-red-400"}`}>
+                  {priceChangePos ? "▲" : "▼"} {Math.abs(priceChange).toFixed(2)}%
                 </span>
                 <span className={`text-[10px] ml-auto ${theme === "dark" ? "text-white/20" : "text-black/25"}`}>
                   via CoinGecko
@@ -138,9 +146,9 @@ export default function Dashboard() {
             </div>
           ) : (
             <div className="grid grid-cols-3 gap-3 sm:gap-4 mb-4">
-              <GasCard title="Slow" value={gasData.low} subtitle="~5 min confirm" accent="#10b981" delay={0} badge="Save" />
-              <GasCard title="Standard" value={gasData.avg} subtitle="~1 min confirm" accent={chainCfg.color} delay={80} />
-              <GasCard title="Fast" value={gasData.high} subtitle="~15 sec confirm" accent="#ef4444" delay={160} badge="Priority" />
+              <GasCard title="Slow"     value={gasData.low}  subtitle="~5 min confirm"  accent="#10b981"      delay={0}   badge="Save" />
+              <GasCard title="Standard" value={gasData.avg}  subtitle="~1 min confirm"  accent={chainCfg.color} delay={80} />
+              <GasCard title="Fast"     value={gasData.high} subtitle="~15 sec confirm" accent="#ef4444"      delay={160} badge="Priority" />
             </div>
           )}
 
@@ -193,13 +201,13 @@ export default function Dashboard() {
                 </button>
               </div>
             </div>
-            <GasChart data={history} accent={chainCfg.color} avgValue={gasData.avg} />
+            <GasChart key={chain} data={history} accent={chainCfg.color} avgValue={gasData.avg} />
           </div>
 
           {/* Bottom grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
             <InsightBox gas={gasData} alertThreshold={alertThreshold} chain={chain} />
-            <TxEstimator gas={gasData} chain={chain} nativePrice={price} />
+            <TxEstimator gas={gasData} chain={chain} nativePrice={ethPrice} />
           </div>
 
           {/* Alert Panel */}
@@ -210,7 +218,6 @@ export default function Dashboard() {
             chain={chain}
           />
 
-          {/* Gwei Explainer */}
           <GweiExplainer chain={chain} />
 
           {/* Footer */}
@@ -222,7 +229,6 @@ export default function Dashboard() {
               }{" "}
               · Auto-refresh every 10s
             </p>
-
             <div className="mt-5 flex justify-center">
               <a
                 href="https://rayn.web.id"
@@ -238,19 +244,16 @@ export default function Dashboard() {
                   }
                 `}
               >
-                {/* Subtle glow matching current chain */}
                 <span
                   className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
                   style={{ boxShadow: `0 0 32px 0 ${chainCfg.color}22` }}
                 />
-                {/* Avatar */}
                 <span
                   className="relative size-8 rounded-xl flex items-center justify-center text-sm font-black text-white shrink-0"
                   style={{ background: `linear-gradient(135deg, ${chainCfg.color}, ${chainCfg.color}88)` }}
                 >
                   R
                 </span>
-                {/* Text block */}
                 <span className="relative flex flex-col leading-snug">
                   <span className={`text-sm font-bold tracking-wide ${theme === "dark" ? "text-white/70 group-hover:text-white/90" : "text-black/60 group-hover:text-black/85"} transition-colors duration-200`}>
                     Built by Rayn
