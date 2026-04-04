@@ -14,25 +14,27 @@ const ThemeContext = createContext<ThemeCtx>({
   toggle: () => {},
 });
 
+function getInitialTheme(): Theme {
+  const stored = localStorage.getItem("gw-theme") as Theme | null;
+  if (stored === "dark" || stored === "light") return stored;
+  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+}
+
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<Theme>(() => {
-    const stored = typeof window !== "undefined" ? localStorage.getItem("gw-theme") : null;
-    if (stored === "dark" || stored === "light") return stored;
-
-    if (typeof window !== "undefined" && window.matchMedia("(prefers-color-scheme: dark)").matches) {
-      return "dark";
-    }
-    return "light";
-  });
-
-  function applyTheme(t: Theme) {
-    const root = document.documentElement;
-    root.classList.toggle("dark", t === "dark");
-    root.style.colorScheme = t;
-  }
+  const [theme, setTheme] = useState<Theme>("dark");
 
   useEffect(() => {
-    applyTheme(theme);
+    const resolved = getInitialTheme();
+    if (resolved !== theme) {
+      setTheme(resolved);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    root.classList.toggle("dark", theme === "dark");
+    root.style.colorScheme = theme;
   }, [theme]);
 
   function toggle() {

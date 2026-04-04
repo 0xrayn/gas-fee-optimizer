@@ -41,7 +41,7 @@ export async function getGasData(chain: Chain = "ETH"): Promise<GasData> {
 
   try {
     const url = `${cfg.base}?module=gastracker&action=gasoracle&apikey=${cfg.key}`;
-    const res = await fetch(url, { next: { revalidate: 10 } }); // ISR every 10s
+    const res = await fetch(url, { next: { revalidate: 10 }, signal: AbortSignal.timeout(5000) }); // ISR every 10s
     if (!res.ok) throw new Error("HTTP " + res.status);
 
     const json = await res.json();

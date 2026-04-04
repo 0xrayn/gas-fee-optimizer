@@ -99,6 +99,7 @@ export default function GasCard({
         <div className="flex items-baseline gap-2">
           <span
             ref={displayRef}
+            suppressHydrationWarning
             className="text-4xl font-bold tabular-nums tracking-tight font-mono"
             style={{ color: accent }}
           >
