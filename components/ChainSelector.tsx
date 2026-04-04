@@ -10,7 +10,7 @@ interface ChainSelectorProps {
 
 export default function ChainSelector({ active, onChange }: ChainSelectorProps) {
   return (
-    <div className="flex items-center gap-1 p-1 rounded-xl border th-muted th-border-card">
+    <div className="flex items-center gap-0.5 sm:gap-1 p-1 rounded-xl border th-muted th-border-card">
       {CHAIN_ORDER.map((key) => {
         const chain = CHAINS[key];
         const isActive = active === key;
@@ -18,7 +18,7 @@ export default function ChainSelector({ active, onChange }: ChainSelectorProps) 
           <button
             key={key}
             onClick={() => onChange(key as Chain)}
-            className="relative px-3 py-1.5 rounded-lg text-xs font-semibold
+            className="relative px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold
               transition-[transform,color] duration-200 ease-out
               hover:scale-105 active:scale-95 th-text-muted hover:th-text-secondary"
             style={isActive ? { color: chain.color } : {}}

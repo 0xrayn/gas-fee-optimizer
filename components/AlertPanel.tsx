@@ -105,19 +105,19 @@ export default function AlertPanel({
   }
 
   return (
-    <div className="rounded-2xl border p-5 th-card th-border-card backdrop-blur-sm">
+    <div className="rounded-2xl border p-4 sm:p-5 th-card th-border-card backdrop-blur-sm">
       <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <p className="text-xs font-semibold uppercase tracking-widest th-text-muted">
+        <div className="flex items-center gap-2 min-w-0">
+          <p className="text-xs font-semibold uppercase tracking-widest th-text-muted truncate">
             Gas Alert — {chainCfg.label}
           </p>
-          {isActive && gasIsBelow && <span className="flex size-1.5 rounded-full bg-emerald-400 animate-ping" />}
+          {isActive && gasIsBelow && <span className="flex size-1.5 rounded-full bg-emerald-400 animate-ping shrink-0" />}
         </div>
         <button
           onClick={toggleEnabled} disabled={isUnsupported}
           title={isUnsupported ? "Notifications not supported" : isDenied ? "Permission denied" : isActive ? "Disable" : "Enable gas alert"}
-          className={`p-1.5 rounded-lg transition-[background] duration-200 disabled:opacity-40 disabled:cursor-not-allowed ${
-            isActive  ? "text-emerald-400 bg-emerald-400/10 hover:bg-emerald-400/20"
+          className={`p-1.5 rounded-lg transition-[background] duration-200 disabled:opacity-40 disabled:cursor-not-allowed shrink-0 ${
+            isActive   ? "text-emerald-400 bg-emerald-400/10 hover:bg-emerald-400/20"
             : isDenied ? "text-red-400 bg-red-400/10 hover:bg-red-400/20"
             : "th-text-faint th-muted th-muted-hover"
           }`}
@@ -140,21 +140,22 @@ export default function AlertPanel({
 
       <p className="text-sm mb-3 th-text-secondary">Notify when avg gas drops below</p>
 
+      {/* Input row — stacks nicely on small screens */}
       <div className="flex gap-2">
         <input
           type="number" min="0.01" max="9999" step={chain === "ARB" ? "0.01" : "1"}
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleSave()}
-          className="flex-1 rounded-xl border px-3 py-2.5 text-sm font-mono font-bold
+          className="flex-1 min-w-0 rounded-xl border px-3 py-2.5 text-sm font-mono font-bold
             transition-[border-color] duration-200 outline-none focus:ring-2 focus:border-transparent
             th-input th-text-primary placeholder:th-text-faint"
           style={{ ["--tw-ring-color" as string]: `${chainCfg.color}55` }}
         />
-        <span className="flex items-center text-sm font-medium px-2 th-text-muted">Gwei</span>
+        <span className="flex items-center text-sm font-medium px-1 sm:px-2 th-text-muted shrink-0">Gwei</span>
         <button
           onClick={handleSave}
-          className={`px-4 py-2.5 rounded-xl text-sm font-semibold transition-[transform] duration-150 hover:scale-105 active:scale-95 ${
+          className={`px-3 sm:px-4 py-2.5 rounded-xl text-sm font-semibold transition-[transform] duration-150 hover:scale-105 active:scale-95 shrink-0 ${
             saved ? "bg-emerald-500/20 border border-emerald-500/30 text-emerald-400" : "border"
           }`}
           style={!saved ? { background: `${chainCfg.color}22`, borderColor: `${chainCfg.color}44`, color: chainCfg.color } : undefined}
@@ -163,7 +164,7 @@ export default function AlertPanel({
         </button>
       </div>
 
-      <div className="flex items-center justify-between mt-3 text-xs th-text-faint">
+      <div className="flex items-center justify-between mt-3 text-xs th-text-faint flex-wrap gap-2">
         <span>Threshold: <span className="font-mono font-bold">{threshold} Gwei</span></span>
         {!isActive && !isUnsupported && !isDenied && (
           <button

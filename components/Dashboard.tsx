@@ -52,46 +52,51 @@ export default function Dashboard() {
   return (
     <>
       <AnimatedBackground />
-      <div className="min-h-screen px-4 py-8 sm:px-8">
+      <div className="min-h-screen px-3 py-5 sm:px-6 sm:py-8">
         <div className="max-w-5xl mx-auto">
 
           {/* Header */}
-          <header className="flex items-start justify-between gap-4 mb-6 flex-wrap animate-[fadeInDown_0.5s_ease-out_both]">
-            <div>
-              <div className="flex items-center gap-3 mb-1">
-                <span className="relative flex size-2.5">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
-                  <span className="relative inline-flex size-2.5 rounded-full bg-emerald-400" />
-                </span>
-                <span className="text-[10px] font-semibold uppercase tracking-[0.2em] th-text-faint">
-                  Live · {tzAbbr} {tzOffset}
-                </span>
-              </div>
-              <h1 className="text-3xl sm:text-4xl font-black tracking-tight font-mono th-text-primary">
-                Gas
-                <span
-                  className="ml-2"
-                  style={{
-                    backgroundImage: `linear-gradient(135deg, ${chainCfg.color}, ${chainCfg.color}99)`,
-                    WebkitBackgroundClip: "text",
-                    WebkitTextFillColor: "transparent",
-                    backgroundClip: "text",
-                  }}
-                >
-                  Watch
-                </span>
-              </h1>
-              <p className="text-sm mt-1 th-text-faint">{CHAIN_SUBTITLE[chain]}</p>
+          <header className="mb-5 animate-[fadeInDown_0.5s_ease-out_both]">
+            {/* Row 1: live dot + timezone */}
+            <div className="flex items-center gap-2 mb-1">
+              <span className="relative flex size-2.5">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
+                <span className="relative inline-flex size-2.5 rounded-full bg-emerald-400" />
+              </span>
+              <span className="text-[10px] font-semibold uppercase tracking-[0.2em] th-text-faint">
+                Live · {tzAbbr} {tzOffset}
+              </span>
             </div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <ChainSelector active={chain} onChange={setChain} />
-              <ThemeToggle />
+
+            {/* Row 2: title + controls */}
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div>
+                <h1 className="text-2xl sm:text-4xl font-black tracking-tight font-mono th-text-primary leading-tight">
+                  Gas
+                  <span
+                    className="ml-2"
+                    style={{
+                      backgroundImage: `linear-gradient(135deg, ${chainCfg.color}, ${chainCfg.color}99)`,
+                      WebkitBackgroundClip: "text",
+                      WebkitTextFillColor: "transparent",
+                      backgroundClip: "text",
+                    }}
+                  >
+                    Watch
+                  </span>
+                </h1>
+                <p className="text-xs sm:text-sm mt-0.5 th-text-faint">{CHAIN_SUBTITLE[chain]}</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <ChainSelector active={chain} onChange={setChain} />
+                <ThemeToggle />
+              </div>
             </div>
           </header>
 
           {/* Price ticker */}
-          <div className="flex items-center gap-3 mb-4 px-4 py-2.5 rounded-xl border th-card th-border-card backdrop-blur-sm">
-            <span className="text-xs font-semibold uppercase tracking-widest th-text-faint">
+          <div className="flex items-center gap-2 sm:gap-3 mb-4 px-3 sm:px-4 py-2.5 rounded-xl border th-card th-border-card backdrop-blur-sm overflow-hidden">
+            <span className="text-xs font-semibold uppercase tracking-widest th-text-faint shrink-0">
               {priceLabel}
             </span>
             {priceLoading ? (
@@ -101,10 +106,10 @@ export default function Dashboard() {
                 <span className="font-mono font-bold text-sm th-text-primary">
                   ${price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
-                <span className={`text-xs font-mono font-semibold ${priceChangePos ? "text-emerald-400" : "text-red-400"}`}>
+                <span className={`text-xs font-mono font-semibold shrink-0 ${priceChangePos ? "text-emerald-400" : "text-red-400"}`}>
                   {priceChangePos ? "▲" : "▼"} {Math.abs(priceChange).toFixed(2)}%
                 </span>
-                <span className="text-[10px] ml-auto th-text-ultrafaint">via Binance / CoinGecko</span>
+                <span className="text-[10px] ml-auto th-text-ultrafaint hidden sm:inline">via Binance / CoinGecko</span>
               </>
             ) : (
               <span className="text-xs font-mono th-text-faint">Unavailable</span>
@@ -118,31 +123,31 @@ export default function Dashboard() {
             </div>
           )}
 
-          {/* Gas Cards */}
+          {/* Gas Cards — 3 kolom di semua ukuran, font dikecilkan di mobile */}
           {!isLoaded ? (
-            <div className="grid grid-cols-3 gap-3 sm:gap-4 mb-4">
+            <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-4">
               {[0, 1, 2].map((i) => (
-                <div key={i} className="rounded-2xl border p-5 h-32 animate-pulse th-card-solid th-border-muted" />
+                <div key={i} className="rounded-2xl border p-4 h-28 sm:h-32 animate-pulse th-card-solid th-border-muted" />
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-3 gap-3 sm:gap-4 mb-4">
-              <GasCard title="Slow"     value={gasData.low}  subtitle="~5 min confirm"  accent="#10b981"       delay={0}   badge="Save" />
-              <GasCard title="Standard" value={gasData.avg}  subtitle="~1 min confirm"  accent={chainCfg.color} delay={80} />
-              <GasCard title="Fast"     value={gasData.high} subtitle="~15 sec confirm" accent="#ef4444"       delay={160} badge="Priority" />
+            <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-4">
+              <GasCard title="Slow"     value={gasData.low}  subtitle="~5 min"         accent="#10b981"       delay={0}   badge="Save" />
+              <GasCard title="Standard" value={gasData.avg}  subtitle="~1 min"         accent={chainCfg.color} delay={80} />
+              <GasCard title="Fast"     value={gasData.high} subtitle="~15 sec"        accent="#ef4444"       delay={160} badge="Priority" />
             </div>
           )}
 
           {/* Chart */}
-          <div className="rounded-2xl border p-5 mb-4 animate-[fadeInUp_0.6s_ease-out_0.2s_both] th-card th-border-card backdrop-blur-sm">
-            <div className="flex items-center justify-between mb-4">
-              <div>
+          <div className="rounded-2xl border p-4 sm:p-5 mb-4 animate-[fadeInUp_0.6s_ease-out_0.2s_both] th-card th-border-card backdrop-blur-sm">
+            <div className="flex items-center justify-between mb-4 gap-2">
+              <div className="min-w-0">
                 <p className="text-xs font-semibold uppercase tracking-widest th-text-muted">Gas History</p>
-                <p className="text-xs mt-0.5 th-text-faint">
-                  Avg Gwei · {tzAbbr} time · last {history.length} snapshots
+                <p className="text-xs mt-0.5 th-text-faint truncate">
+                  Avg Gwei · {tzAbbr} · last {history.length} snapshots
                 </p>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 shrink-0">
                 <div className="relative flex items-center justify-center size-8">
                   <svg className="absolute inset-0 -rotate-90" width="32" height="32">
                     <circle cx="16" cy="16" r="8" fill="none" stroke="var(--border-card)" strokeWidth="2" />
@@ -161,20 +166,20 @@ export default function Dashboard() {
                 <button
                   onClick={manualRefresh}
                   disabled={isRefreshing}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold
+                  className="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-semibold
                     border th-muted th-border-muted th-text-secondary th-muted-hover
                     transition-[transform] duration-150 hover:scale-105 active:scale-95
                     disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <RefreshCw size={12} className={isRefreshing ? "animate-spin" : ""} />
-                  Refresh
+                  <span className="hidden xs:inline">Refresh</span>
                 </button>
               </div>
             </div>
             <GasChart key={chain} data={history} accent={chainCfg.color} avgValue={gasData.avg} />
           </div>
 
-          {/* Bottom grid */}
+          {/* Bottom grid — stack di mobile, 2 kolom di sm+ */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
             <InsightBox gas={gasData} alertThreshold={alertThreshold} chain={chain} />
             <TxEstimator gas={gasData} chain={chain} nativePrice={ethPrice} />
@@ -192,7 +197,7 @@ export default function Dashboard() {
 
           {/* Footer */}
           <footer className="mt-8 pb-4">
-            <p className="text-[11px] font-mono text-center th-text-ultrafaint">
+            <p className="text-[11px] font-mono text-center th-text-ultrafaint px-2">
               {isLoaded
                 ? `Last updated: ${formatLocalDateTime(new Date(gasData.fetchedAt))} ${tzAbbr}`
                 : "Initializing..."
@@ -208,7 +213,6 @@ export default function Dashboard() {
                   transition-[transform,border-color,background] duration-200
                   hover:scale-[1.04] active:scale-[0.97] th-muted hover:th-muted-hover"
               >
-                {/* dot avatar kecil */}
                 <span
                   className="size-5 rounded-full flex items-center justify-center text-[10px] font-black text-white shrink-0"
                   style={{ background: `linear-gradient(135deg, ${chainCfg.color}, ${chainCfg.color}77)` }}

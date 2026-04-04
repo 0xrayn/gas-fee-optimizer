@@ -39,18 +39,18 @@ export default function InsightBox({ gas, alertThreshold, chain }: InsightBoxPro
   const spread = gas.high - gas.low;
 
   return (
-    <div className="rounded-2xl border p-5 space-y-4 th-card th-border-card backdrop-blur-sm">
+    <div className="rounded-2xl border p-4 sm:p-5 space-y-4 th-card th-border-card backdrop-blur-sm">
       <div className="flex items-center gap-3">
-        <div className="relative flex items-center justify-center size-9 rounded-full" style={{ background: `${level.color}18` }}>
+        <div className="relative flex items-center justify-center size-9 rounded-full shrink-0" style={{ background: `${level.color}18` }}>
           <span className={`size-2.5 rounded-full ${level.dot} relative`}>
             <span className={`absolute inset-0 rounded-full ${level.dot} animate-ping opacity-60`} />
           </span>
         </div>
-        <div>
+        <div className="min-w-0">
           <p className="text-xs font-semibold uppercase tracking-widest th-text-muted">
             {chainCfg.label} Network Status
           </p>
-          <p suppressHydrationWarning className="text-base font-bold" style={{ color: level.color }}>
+          <p suppressHydrationWarning className="text-base font-bold leading-tight" style={{ color: level.color }}>
             {gas.avg > 0 ? `${level.label} — ${gas.avg.toFixed(gas.avg < 1 ? 4 : 2)} Gwei avg` : "Loading..."}
           </p>
         </div>
@@ -58,7 +58,7 @@ export default function InsightBox({ gas, alertThreshold, chain }: InsightBoxPro
 
       {isUnderAlert && (
         <div className="flex items-start gap-3 rounded-xl p-3 bg-emerald-500/10 border border-emerald-500/20">
-          <span className="text-emerald-400 text-lg">🔔</span>
+          <span className="text-emerald-400 text-lg shrink-0">🔔</span>
           <p className="text-sm text-emerald-400 font-medium">
             Gas is below your {alertThreshold} Gwei alert threshold!
           </p>
@@ -75,7 +75,7 @@ export default function InsightBox({ gas, alertThreshold, chain }: InsightBoxPro
           ].map((item, i) => (
             <div key={i} className="flex items-start gap-2.5 text-sm th-text-secondary">
               <span className="text-base leading-5 flex-shrink-0">{item.icon}</span>
-              <span className="leading-5">{item.text}</span>
+              <span className="leading-5 text-xs sm:text-sm">{item.text}</span>
             </div>
           ))}
         </div>

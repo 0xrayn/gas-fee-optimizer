@@ -18,12 +18,11 @@ type CustomTooltipProps = TooltipProps<number, string> & {
   label?: string;
 };
 
-// Tooltip tidak perlu useTheme — pakai CSS vars
 function CustomTooltip({ active, payload, label }: CustomTooltipProps) {
   if (!active || !payload?.length) return null;
   return (
     <div
-      className="rounded-xl border px-4 py-3 text-sm shadow-2xl backdrop-blur-md"
+      className="rounded-xl border px-3 py-2.5 text-sm shadow-2xl backdrop-blur-md"
       style={{
         background: "var(--chart-tooltip-bg)",
         borderColor: "var(--chart-tooltip-border)",
@@ -40,28 +39,28 @@ function CustomTooltip({ active, payload, label }: CustomTooltipProps) {
 }
 
 export default function GasChart({ data, accent, avgValue }: GasChartProps) {
-  // Warna dibaca dari CSS variables langsung — tidak perlu JS state
   const gridColor = "var(--chart-grid)";
   const textColor = "var(--chart-text)";
 
   return (
-    <div className="w-full h-[200px]">
+    // Tinggi lebih kecil di mobile
+    <div className="w-full h-[160px] sm:h-[200px]">
       <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={data} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
+        <AreaChart data={data} margin={{ top: 8, right: 4, left: -24, bottom: 0 }}>
           <defs>
             <linearGradient id="gasGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={accent} stopOpacity={0.3} />
+              <stop offset="0%"   stopColor={accent} stopOpacity={0.3} />
               <stop offset="100%" stopColor={accent} stopOpacity={0.0} />
             </linearGradient>
           </defs>
           <CartesianGrid stroke={gridColor} strokeDasharray="4 4" vertical={false} />
           <XAxis
             dataKey="time"
-            tick={{ fill: textColor, fontSize: 10, fontFamily: "monospace" }}
+            tick={{ fill: textColor, fontSize: 9, fontFamily: "monospace" }}
             axisLine={false} tickLine={false} interval="preserveStartEnd"
           />
           <YAxis
-            tick={{ fill: textColor, fontSize: 10, fontFamily: "monospace" }}
+            tick={{ fill: textColor, fontSize: 9, fontFamily: "monospace" }}
             axisLine={false} tickLine={false}
             tickFormatter={(v) => (v < 1 ? v.toFixed(2) : Math.round(v).toString())}
           />

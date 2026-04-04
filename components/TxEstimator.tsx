@@ -19,11 +19,11 @@ const TX_TYPES_BY_CHAIN: Record<Chain, { name: string; gasUnits: number; icon: s
     { name: "Contract Deploy", gasUnits: 600_000, icon: "📦" },
   ],
   MATIC: [
-    { name: "MATIC Transfer",   gasUnits: 21_000,  icon: "🟣" },
-    { name: "ERC-20 Transfer",  gasUnits: 65_000,  icon: "🪙" },
-    { name: "QuickSwap / UniV3",gasUnits: 130_000, icon: "🔄" },
-    { name: "NFT Mint",         gasUnits: 185_000, icon: "🎨" },
-    { name: "Contract Deploy",  gasUnits: 550_000, icon: "📦" },
+    { name: "MATIC Transfer",    gasUnits: 21_000,  icon: "🟣" },
+    { name: "ERC-20 Transfer",   gasUnits: 65_000,  icon: "🪙" },
+    { name: "QuickSwap / UniV3", gasUnits: 130_000, icon: "🔄" },
+    { name: "NFT Mint",          gasUnits: 185_000, icon: "🎨" },
+    { name: "Contract Deploy",   gasUnits: 550_000, icon: "📦" },
   ],
   ARB: [
     { name: "ETH Transfer",    gasUnits: 21_000,  icon: "🔵" },
@@ -41,7 +41,6 @@ function calcFeeNative(gwei: number, gasUnits: number): number {
 }
 
 function feeLevel(gwei: number, chain: Chain): { cls: string; label: string } {
-  // Threshold berbeda tiap chain
   const thresholds: Record<Chain, [number, number]> = {
     ETH:   [20,  60],
     MATIC: [60,  120],
@@ -49,8 +48,8 @@ function feeLevel(gwei: number, chain: Chain): { cls: string; label: string } {
   };
   const [low, high] = thresholds[chain];
   if (gwei <= low)  return { cls: "text-emerald-400 bg-emerald-400/10 border-emerald-400/20", label: "Best" };
-  if (gwei <= high) return { cls: "text-amber-400 bg-amber-400/10 border-amber-400/20",    label: "OK"   };
-  return                   { cls: "text-red-400 bg-red-400/10 border-red-400/20",           label: "High" };
+  if (gwei <= high) return { cls: "text-amber-400 bg-amber-400/10 border-amber-400/20",      label: "OK"   };
+  return                   { cls: "text-red-400 bg-red-400/10 border-red-400/20",             label: "High" };
 }
 
 const MODE_LABELS: Record<GasMode, string> = { low: "Slow", avg: "Standard", high: "Fast" };
@@ -61,11 +60,11 @@ export default function TxEstimator({ gas, chain, nativePrice = 0 }: TxEstimator
   const chainCfg  = CHAINS[chain];
   const currency  = chainCfg.nativeCurrency;
   const txTypes   = TX_TYPES_BY_CHAIN[chain];
-  const gweiPrice = gas[mode];          // low / avg / high
+  const gweiPrice = gas[mode];
   const level     = feeLevel(gweiPrice, chain);
 
   return (
-    <div className="rounded-2xl border p-5 th-card th-border-card backdrop-blur-sm">
+    <div className="rounded-2xl border p-4 sm:p-5 th-card th-border-card backdrop-blur-sm">
 
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
@@ -77,13 +76,13 @@ export default function TxEstimator({ gas, chain, nativePrice = 0 }: TxEstimator
         </span>
       </div>
 
-      {/* Mode toggle — Slow / Standard / Fast */}
+      {/* Mode toggle */}
       <div className="flex gap-1 mb-3 p-1 rounded-xl th-muted">
         {(["low", "avg", "high"] as GasMode[]).map((m) => (
           <button
             key={m}
             onClick={() => setMode(m)}
-            className={`flex-1 py-1 rounded-lg text-[11px] font-semibold transition-all duration-150 ${
+            className={`flex-1 py-1.5 rounded-lg text-[11px] font-semibold transition-all duration-150 ${
               mode === m
                 ? "text-white"
                 : "th-text-faint hover:th-text-muted"
@@ -115,13 +114,13 @@ export default function TxEstimator({ gas, chain, nativePrice = 0 }: TxEstimator
           return (
             <div
               key={tx.name}
-              className="flex items-center justify-between py-2 px-3 rounded-xl th-muted th-muted-hover"
+              className="flex items-center justify-between py-2 px-2.5 sm:px-3 rounded-xl th-muted th-muted-hover"
             >
-              <div className="flex items-center gap-2.5">
-                <span className="text-sm">{tx.icon}</span>
-                <span className="text-sm font-medium th-text-secondary">{tx.name}</span>
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="text-sm shrink-0">{tx.icon}</span>
+                <span className="text-xs sm:text-sm font-medium th-text-secondary truncate">{tx.name}</span>
               </div>
-              <div className="text-right">
+              <div className="text-right shrink-0 ml-2">
                 {feeUsd !== null ? (
                   <p className="text-xs font-mono font-bold th-text-primary">
                     ${feeUsd < 0.01 ? feeUsd.toFixed(4) : feeUsd.toFixed(2)}
