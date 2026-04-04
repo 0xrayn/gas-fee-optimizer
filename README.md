@@ -1,37 +1,95 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# GasWatch Pro ⛽
 
-## Getting Started
+Real-time Ethereum gas fee optimizer — multi-chain, live alerts, smart insights.
 
-First, run the development server:
+## Features
+
+- **Multi-chain** — Ethereum, Polygon, Arbitrum
+- **Auto-refresh** every 10 seconds with smooth countdown ring
+- **Real API** — Etherscan / PolygonScan / Arbiscan (falls back to simulation if no keys)
+- **Dark / Light mode** — smooth toggle with OS preference detection
+- **Timezone-aware** — auto-detects user timezone, all timestamps localized
+- **Gas alert** — set a threshold, get highlighted when gas drops below it
+- **Tx Fee Estimator** — shows USD cost for common operations
+- **AI Insights** — context-aware advice based on time of day & gas level
+- **Animated** — smooth number counters, floating particles, Web3 grid background
+- **Tailwind v4** — @theme config, CSS-first, no tailwind.config.js
+
+## Stack
+
+- **Next.js 15** (App Router, Edge Runtime)
+- **Tailwind CSS v4** (PostCSS plugin)
+- **Recharts** (area chart)
+- **Lucide React** (icons)
+- **TypeScript** (strict mode)
+
+## Setup
 
 ```bash
+# 1. Install dependencies
+npm install
+
+# 2. Copy env template
+cp .env.example .env.local
+
+# 3. (Optional) Add API keys to .env.local
+# App works in simulation mode without keys.
+
+# 4. Start dev server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Then open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## API Keys (Optional)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Get free API keys from:
+- **Ethereum** → [etherscan.io/myapikey](https://etherscan.io/myapikey)
+- **Polygon** → [polygonscan.com/myapikey](https://polygonscan.com/myapikey)
+- **Arbitrum** → [arbiscan.io/myapikey](https://arbiscan.io/myapikey)
 
-## Learn More
+Add them to `.env.local`:
 
-To learn more about Next.js, take a look at the following resources:
+```env
+ETHERSCAN_API_KEY=your_key_here
+POLYGONSCAN_API_KEY=your_key_here
+ARBISCAN_API_KEY=your_key_here
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Project Structure
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```
+gaswatch/
+├── app/
+│   ├── api/gas/route.ts     # Edge API route (proxies to Etherscan)
+│   ├── globals.css          # Tailwind v4 + keyframes + theme tokens
+│   ├── layout.tsx           # Root layout with ThemeProvider + fonts
+│   └── page.tsx             # Server component entry
+├── components/
+│   ├── AnimatedBackground   # Web3 grid + floating orbs background
+│   ├── AlertPanel           # Gas alert threshold UI
+│   ├── ChainSelector        # ETH / Polygon / Arbitrum switcher
+│   ├── Dashboard            # Main client component
+│   ├── GasCard              # Animated metric card (smooth counter)
+│   ├── GasChart             # Recharts area chart, themed
+│   ├── InsightBox           # AI-style insights with timezone hints
+│   ├── ThemeProvider        # Context + localStorage + OS preference
+│   ├── ThemeToggle          # Dark/Light button with icon animation
+│   └── TxEstimator          # Fee estimator for common tx types
+├── hooks/
+│   └── useGasPolling.ts     # Client polling, history, countdown
+├── lib/
+│   ├── chains.ts            # Chain configs (colors, labels, APIs)
+│   ├── getGas.ts            # Server-side gas fetcher + simulation
+│   └── timezone.ts          # All timezone utilities (auto-detect)
+└── types/
+    └── index.ts             # Shared TypeScript types
+```
 
-## Deploy on Vercel
+## Roadmap
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-"# gas-fee-optimizer" 
+- [ ] Wallet connect (wagmi v2)
+- [ ] Push notifications (Web Push API)
+- [ ] Historical data (The Graph protocol)
+- [ ] Gas prediction ML model
+- [ ] Mobile PWA support
