@@ -4,24 +4,35 @@ import { useState, useEffect } from "react";
 import { useTheme } from "@/components/ThemeProvider";
 import { getBestWindowHint, getHourLocal, getUserTimezoneAbbr } from "@/lib/timezone";
 import { CHAINS } from "@/lib/chains";
-import type { GasData, Chain } from "@/types";
+import type { GasData } from "@/types";
+import type { Chain } from "@/types";
 
 interface InsightBoxProps {
   gas: GasData;
   alertThreshold: number;
-  alertEnabled: boolean;
   chain: Chain;
 }
 
-function getGasLevel(avg: number) {
-  if (avg < 15) return { label: "Very Low", color: "#10b981", dot: "bg-emerald-400", advice: "Excellent — transact now with any speed setting." };
-  if (avg < 30) return { label: "Low", color: "#22c55e", dot: "bg-green-400", advice: "Good conditions. Use 'Slow' to save even more." };
-  if (avg < 60) return { label: "Moderate", color: "#f59e0b", dot: "bg-amber-400", advice: "Acceptable for urgent txns. Consider waiting for <30 Gwei." };
-  if (avg < 100) return { label: "High", color: "#f97316", dot: "bg-orange-400", advice: "Elevated fees. Delay non-urgent transactions." };
-  return { label: "Very High", color: "#ef4444", dot: "bg-red-400", advice: "Network congested. Wait unless urgent." };
+function getGasLevel(avg: number): {
+  label: string;
+  color: string;
+  dot: string;
+  advice: string;
+} {
+  if (avg < 15) {
+    return { label: "Very Low", color: "#10b981", dot: "bg-emerald-400", advice: "Excellent — transact now with any speed setting." };
+  } else if (avg < 30) {
+    return { label: "Low", color: "#22c55e", dot: "bg-green-400", advice: "Good conditions. Use 'Slow' to save even more." };
+  } else if (avg < 60) {
+    return { label: "Moderate", color: "#f59e0b", dot: "bg-amber-400", advice: "Acceptable for urgent txns. Consider waiting for <30 Gwei." };
+  } else if (avg < 100) {
+    return { label: "High", color: "#f97316", dot: "bg-orange-400", advice: "Elevated fees. Delay non-urgent transactions." };
+  } else {
+    return { label: "Very High", color: "#ef4444", dot: "bg-red-400", advice: "Network congested. Wait unless urgent." };
+  }
 }
 
-export default function InsightBox({ gas, alertThreshold, alertEnabled, chain }: InsightBoxProps) {
+export default function InsightBox({ gas, alertThreshold, chain }: InsightBoxProps) {
   const { theme } = useTheme();
   const level = getGasLevel(gas.avg);
   const hourHint = getBestWindowHint(getHourLocal(new Date()));
@@ -34,7 +45,7 @@ export default function InsightBox({ gas, alertThreshold, alertEnabled, chain }:
     return () => clearTimeout(t);
   }, []);
 
-  const isUnderAlert = mounted && alertEnabled && gas.avg > 0 && gas.avg <= alertThreshold;
+  const isUnderAlert = mounted && gas.avg > 0 && gas.avg <= alertThreshold;
 
   return (
     <div className={`rounded-2xl border p-5 space-y-4 transition-colors duration-300 ${

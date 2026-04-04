@@ -10,13 +10,30 @@ interface TxEstimatorProps {
   nativePrice?: number;
 }
 
-const TX_TYPES = [
-  { name: "ETH Transfer", gasUnits: 21_000, icon: "⟠" },
-  { name: "ERC-20 Transfer", gasUnits: 65_000, icon: "🪙" },
-  { name: "Uniswap Swap", gasUnits: 150_000, icon: "🔄" },
-  { name: "NFT Mint", gasUnits: 200_000, icon: "🎨" },
-  { name: "Contract Deploy", gasUnits: 600_000, icon: "📦" },
-];
+// TX types yang berbeda per chain
+const TX_TYPES_BY_CHAIN: Record<Chain, { name: string; gasUnits: number; icon: string }[]> = {
+  ETH: [
+    { name: "ETH Transfer", gasUnits: 21_000, icon: "⟠" },
+    { name: "ERC-20 Transfer", gasUnits: 65_000, icon: "🪙" },
+    { name: "Uniswap Swap", gasUnits: 150_000, icon: "🔄" },
+    { name: "NFT Mint", gasUnits: 200_000, icon: "🎨" },
+    { name: "Contract Deploy", gasUnits: 600_000, icon: "📦" },
+  ],
+  MATIC: [
+    { name: "MATIC Transfer", gasUnits: 21_000, icon: "🟣" },
+    { name: "ERC-20 Transfer", gasUnits: 65_000, icon: "🪙" },
+    { name: "QuickSwap / UniV3", gasUnits: 130_000, icon: "🔄" },
+    { name: "NFT Mint", gasUnits: 185_000, icon: "🎨" },
+    { name: "Contract Deploy", gasUnits: 550_000, icon: "📦" },
+  ],
+  ARB: [
+    { name: "ETH Transfer", gasUnits: 21_000, icon: "🔵" },
+    { name: "ERC-20 Transfer", gasUnits: 55_000, icon: "🪙" },
+    { name: "Uniswap V3 Swap", gasUnits: 120_000, icon: "🔄" },
+    { name: "NFT Mint", gasUnits: 160_000, icon: "🎨" },
+    { name: "Contract Deploy", gasUnits: 500_000, icon: "📦" },
+  ],
+};
 
 function calcFeeNative(gwei: number, gasUnits: number): number {
   return (gwei * gasUnits) / 1e9;
@@ -33,6 +50,7 @@ export default function TxEstimator({ gas, chain, nativePrice = 0 }: TxEstimator
   const level = feeLevel(gas.avg);
   const chainCfg = CHAINS[chain];
   const currency = chainCfg.nativeCurrency;
+  const txTypes = TX_TYPES_BY_CHAIN[chain];
 
   return (
     <div className={`rounded-2xl border p-5 transition-colors duration-300 ${
@@ -48,7 +66,7 @@ export default function TxEstimator({ gas, chain, nativePrice = 0 }: TxEstimator
       </div>
 
       <div className="space-y-2">
-        {TX_TYPES.map((tx) => {
+        {txTypes.map((tx) => {
           const feeNative = calcFeeNative(gas.avg, tx.gasUnits);
           const feeUsd = nativePrice > 0 ? feeNative * nativePrice : null;
           return (

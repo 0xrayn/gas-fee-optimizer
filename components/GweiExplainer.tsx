@@ -3,103 +3,109 @@
 import { useState } from "react";
 import { useTheme } from "@/components/ThemeProvider";
 import { ChevronDown } from "lucide-react";
+import { CHAINS } from "@/lib/chains";
+import type { Chain } from "@/types";
 
-const ITEMS = [
-  {
-    icon: "⚡",
-    title: "What is Gwei?",
-    body: "Gwei is a denomination of ETH — 1 Gwei equals 0.000000001 ETH (10⁻⁹ ETH). The name comes from \"Giga-wei\". Wei is the smallest absolute unit of Ether, similar to how a Satoshi relates to Bitcoin.",
-    color: "#627EEA",
-  },
-  {
-    icon: "⛽",
-    title: "Why do Gas Fees exist?",
-    body: "Every transaction on Ethereum requires computation from validators. Gas fees are your payment for that computation. Simple transfers cost ~21,000 gas units; complex DeFi interactions or contract deployments can exceed 500,000 units.",
-    color: "#10b981",
-  },
-  {
-    icon: "📈",
-    title: "Why do Gas prices fluctuate?",
-    body: "Gas price is driven by supply & demand. When the network is congested — DeFi surges, NFT drops, token launches — validators prioritize higher-fee transactions. Late night UTC hours (00:00–06:00) are typically cheapest globally.",
-    color: "#f59e0b",
-  },
-  {
-    icon: "🎯",
-    title: "Tips to save on Gas",
-    body: "Use the 'Slow' tier for non-urgent transactions. Avoid the 14:00–20:00 local window when EU and US markets overlap. Set a GasWatch alert at your target Gwei threshold and transact only when conditions are favorable.",
-    color: "#8247E5",
-  },
-];
+interface GweiExplainerProps {
+  chain?: Chain;
+}
 
-export default function GweiExplainer() {
+export default function GweiExplainer({ chain = "ETH" }: GweiExplainerProps) {
   const { theme } = useTheme();
   const [open, setOpen] = useState(false);
+  const chainCfg = CHAINS[chain];
+
+  const items = [
+    {
+      icon: "⚡",
+      title: "What is Gwei?",
+      body: "Gwei is the smallest denomination of ETH used for gas pricing. 1 Gwei = 0.000000001 ETH (10⁻⁹ ETH). The name comes from \"Giga-wei\" — Wei being the absolute smallest unit, like \"satoshi\" in Bitcoin.",
+    },
+    {
+      icon: "⛽",
+      title: "Why do gas fees exist?",
+      body: "Every transaction requires computation from validators. Gas fees compensate them for that work. The more complex the transaction — a simple transfer vs. deploying a smart contract — the more gas it consumes.",
+    },
+    {
+      icon: "📈",
+      title: "Why do fees fluctuate?",
+      body: "Gas price is determined by supply and demand. When the network is busy (DeFi activity, NFT drops, token launches), fees spike because validators prioritize higher-paying transactions. Early mornings UTC are typically cheapest.",
+    },
+    {
+      icon: "🎯",
+      title: "Tips to save on gas",
+      body: "Use the 'Slow' setting for non-urgent transactions. Avoid 14:00–20:00 local time when EU and US markets overlap. Monitor GasWatch before transacting to catch the lowest windows.",
+    },
+  ];
 
   return (
-    <div className={`mt-4 rounded-2xl border overflow-hidden transition-all duration-300 ${
+    <div className={`mt-4 rounded-2xl border overflow-hidden transition-colors duration-300 ${
       theme === "dark" ? "border-white/[0.07]" : "border-black/[0.07]"
     }`}>
-      {/* Toggle button */}
       <button
         onClick={() => setOpen((v) => !v)}
-        className={`w-full flex items-center justify-between px-5 py-4 text-left transition-all duration-200 ${
+        className={`w-full flex items-center justify-between px-5 py-4 text-left transition-colors duration-200 ${
           theme === "dark"
-            ? "bg-white/[0.02] hover:bg-white/[0.05] text-white/70"
+            ? "bg-white/[0.02] hover:bg-white/[0.04] text-white/70"
             : "bg-white/60 hover:bg-white/80 text-black/60"
         }`}
       >
         <div className="flex items-center gap-3">
-          <div className="flex items-center justify-center size-7 rounded-lg bg-[#627EEA]/15 text-sm">📚</div>
-          <div>
-            <p className="text-sm font-semibold">What is Gwei & why do Gas Fees matter?</p>
-            <p className={`text-[11px] mt-0.5 ${theme === "dark" ? "text-white/30" : "text-black/35"}`}>
-              Understanding Ethereum transaction costs
-            </p>
-          </div>
+          <span
+            className="size-7 rounded-lg flex items-center justify-center text-sm"
+            style={{ background: `${chainCfg.color}22` }}
+          >
+            📚
+          </span>
+          <span className={`text-sm font-semibold ${theme === "dark" ? "text-white/70" : "text-black/70"}`}>
+            What is Gwei & why do gas fees matter?
+          </span>
         </div>
         <ChevronDown
           size={16}
-          className={`transition-transform duration-300 flex-shrink-0 ml-3 ${open ? "rotate-180" : ""} ${
+          className={`shrink-0 transition-transform duration-300 ${open ? "rotate-180" : ""} ${
             theme === "dark" ? "text-white/30" : "text-black/30"
           }`}
         />
       </button>
 
-      {/* Content — animated */}
       <div
-        className={`transition-all duration-500 ease-in-out overflow-hidden ${
-          open ? "max-h-[800px] opacity-100" : "max-h-0 opacity-0"
+        className={`grid transition-all duration-300 ease-in-out ${
+          open ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
         }`}
       >
-        <div className={`px-5 pb-5 pt-4 border-t grid grid-cols-1 sm:grid-cols-2 gap-3 ${
-          theme === "dark" ? "border-white/[0.05] bg-white/[0.01]" : "border-black/[0.05] bg-white/40"
-        }`}>
-          {ITEMS.map((item, i) => (
-            <div
-              key={item.title}
-              className={`rounded-xl p-4 border transition-all duration-300 hover:scale-[1.01] ${
-                theme === "dark"
-                  ? "bg-white/[0.03] border-white/[0.06] hover:border-white/[0.12]"
-                  : "bg-white/70 border-black/[0.06] hover:border-black/[0.12]"
-              }`}
-              style={{ animationDelay: `${i * 60}ms` }}
-            >
-              {/* Card top accent line */}
+        <div className="overflow-hidden">
+          <div className={`px-5 pb-5 pt-4 grid grid-cols-1 sm:grid-cols-2 gap-3 border-t ${
+            theme === "dark"
+              ? "bg-white/[0.02] border-white/[0.05]"
+              : "bg-white/50 border-black/[0.05]"
+          }`}>
+            {items.map((item) => (
               <div
-                className="h-[2px] w-10 rounded-full mb-3"
-                style={{ background: item.color }}
-              />
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-base">{item.icon}</span>
-                <p className={`text-sm font-bold ${theme === "dark" ? "text-white/90" : "text-black/90"}`}>
-                  {item.title}
+                key={item.title}
+                className={`rounded-xl p-4 border transition-colors duration-200 ${
+                  theme === "dark"
+                    ? "bg-white/[0.03] border-white/[0.05] hover:bg-white/[0.05]"
+                    : "bg-white/70 border-black/[0.05] hover:bg-white/90"
+                }`}
+              >
+                <div className="flex items-center gap-2.5 mb-2">
+                  <span
+                    className="size-7 rounded-lg flex items-center justify-center text-sm shrink-0"
+                    style={{ background: `${chainCfg.color}18` }}
+                  >
+                    {item.icon}
+                  </span>
+                  <p className={`text-sm font-semibold ${theme === "dark" ? "text-white/80" : "text-black/80"}`}>
+                    {item.title}
+                  </p>
+                </div>
+                <p className={`text-xs leading-relaxed ${theme === "dark" ? "text-white/50" : "text-black/55"}`}>
+                  {item.body}
                 </p>
               </div>
-              <p className={`text-xs leading-relaxed ${theme === "dark" ? "text-white/50" : "text-black/55"}`}>
-                {item.body}
-              </p>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
     </div>

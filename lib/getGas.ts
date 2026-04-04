@@ -24,7 +24,6 @@ function simulateGas(chain: Chain): GasData {
 }
 
 export async function getGasData(chain: Chain = "ETH"): Promise<GasData> {
-  // ARB tidak support gastracker API, langsung simulasi
   if (chain === "ARB") return simulateGas(chain);
 
   if (!API_KEY || API_KEY === "YourApiKeyToken") {
