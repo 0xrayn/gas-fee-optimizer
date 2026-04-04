@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, ExternalLink } from "lucide-react";
 import { useTheme } from "@/components/ThemeProvider";
 import { useGasPolling } from "@/hooks/useGasPolling";
+import { usePricePolling } from "@/hooks/usePricePolling";
 import { CHAINS } from "@/lib/chains";
 import { formatLocalDateTime, getUserTimezoneAbbr, getUserUTCOffset } from "@/lib/timezone";
 import AnimatedBackground from "@/components/AnimatedBackground";
@@ -14,7 +15,14 @@ import GasChart from "@/components/GasChart";
 import InsightBox from "@/components/InsightBox";
 import TxEstimator from "@/components/TxEstimator";
 import AlertPanel from "@/components/AlertPanel";
+import GweiExplainer from "@/components/GweiExplainer";
 import type { Chain } from "@/types";
+
+const CHAIN_SUBTITLE: Record<Chain, string> = {
+  ETH: "Real-time Ethereum gas fee optimizer",
+  MATIC: "Real-time Polygon gas fee optimizer",
+  ARB: "Real-time Arbitrum gas fee optimizer",
+};
 
 export default function Dashboard() {
   const { theme } = useTheme();
@@ -23,6 +31,7 @@ export default function Dashboard() {
 
   const { gasData, history, countdown, isRefreshing, error, manualRefresh } =
     useGasPolling(chain);
+  const { price, priceChange } = usePricePolling(chain);
 
   const chainCfg = CHAINS[chain];
   const tzAbbr = getUserTimezoneAbbr();
@@ -31,6 +40,7 @@ export default function Dashboard() {
   const pct = (countdown / 10) * 100;
   const circumference = 2 * Math.PI * 8;
   const isLoaded = gasData.avg > 0;
+  const priceChangePositive = priceChange >= 0;
 
   return (
     <>
@@ -39,8 +49,8 @@ export default function Dashboard() {
       <div className="min-h-screen px-4 py-8 sm:px-8">
         <div className="max-w-5xl mx-auto">
 
-          {/* ── Header ─────────────────────────────────────── */}
-          <header className="flex items-start justify-between gap-4 mb-8 flex-wrap animate-[fadeInDown_0.5s_ease-out_both]">
+          {/* Header */}
+          <header className="flex items-start justify-between gap-4 mb-6 flex-wrap animate-[fadeInDown_0.5s_ease-out_both]">
             <div>
               <div className="flex items-center gap-3 mb-1">
                 <span className="relative flex size-2.5">
@@ -65,7 +75,7 @@ export default function Dashboard() {
                 </span>
               </h1>
               <p className={`text-sm mt-1 ${theme === "dark" ? "text-white/40" : "text-black/40"}`}>
-                Real-time Ethereum gas fee optimizer
+                {CHAIN_SUBTITLE[chain]}
               </p>
             </div>
             <div className="flex items-center gap-2 flex-wrap">
@@ -74,7 +84,31 @@ export default function Dashboard() {
             </div>
           </header>
 
-          {/* ── Error banner ─────────────────────────────── */}
+          {/* Price ticker */}
+          <div className={`flex items-center gap-3 mb-4 px-4 py-2.5 rounded-xl border transition-colors duration-300 ${
+            theme === "dark" ? "bg-white/[0.02] border-white/[0.07]" : "bg-white/60 border-black/[0.07] backdrop-blur-sm"
+          }`}>
+            <span className={`text-xs font-semibold uppercase tracking-widest ${theme === "dark" ? "text-white/40" : "text-black/40"}`}>
+              {chainCfg.nativeCurrency} Price
+            </span>
+            {price > 0 ? (
+              <>
+                <span className={`font-mono font-bold text-sm ${theme === "dark" ? "text-white" : "text-black"}`}>
+                  ${price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </span>
+                <span className={`text-xs font-mono font-semibold ${priceChangePositive ? "text-emerald-400" : "text-red-400"}`}>
+                  {priceChangePositive ? "▲" : "▼"} {Math.abs(priceChange).toFixed(2)}%
+                </span>
+                <span className={`text-[10px] ml-auto ${theme === "dark" ? "text-white/20" : "text-black/25"}`}>
+                  via CoinGecko
+                </span>
+              </>
+            ) : (
+              <span className={`text-xs font-mono ${theme === "dark" ? "text-white/30" : "text-black/30"}`}>Loading...</span>
+            )}
+          </div>
+
+          {/* Error banner */}
           {error && (
             <div className={`mb-4 px-4 py-2.5 rounded-xl text-xs border ${
               theme === "dark"
@@ -85,7 +119,7 @@ export default function Dashboard() {
             </div>
           )}
 
-          {/* ── Gas Cards ───────────────────────────────── */}
+          {/* Gas Cards */}
           {!isLoaded ? (
             <div className="grid grid-cols-3 gap-3 sm:gap-4 mb-4">
               {[0, 1, 2].map((i) => (
@@ -102,7 +136,7 @@ export default function Dashboard() {
             </div>
           )}
 
-          {/* ── Chart ─────────────────────────────────────── */}
+          {/* Chart */}
           <div className={`rounded-2xl border p-5 mb-4 transition-colors duration-300 animate-[fadeInUp_0.6s_ease-out_0.2s_both] ${
             theme === "dark" ? "bg-white/[0.02] border-white/[0.07]" : "bg-white/60 border-black/[0.07] backdrop-blur-sm"
           }`}>
@@ -154,21 +188,41 @@ export default function Dashboard() {
             <GasChart data={history} accent={chainCfg.color} avgValue={gasData.avg} />
           </div>
 
-          {/* ── Bottom grid ───────────────────────────────── */}
+          {/* Bottom grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-            <InsightBox gas={gasData} alertThreshold={alertThreshold} />
-            <TxEstimator gas={gasData} />
+            <InsightBox gas={gasData} alertThreshold={alertThreshold} chain={chain} />
+            <TxEstimator gas={gasData} chain={chain} nativePrice={price} />
           </div>
 
           <AlertPanel threshold={alertThreshold} onThresholdChange={setAlertThreshold} />
 
-          {/* ── Footer ────────────────────────────────────── */}
-          <footer className={`mt-6 text-center text-[11px] font-mono ${theme === "dark" ? "text-white/20" : "text-black/25"}`}>
-            {isLoaded
-              ? `Last updated: ${formatLocalDateTime(new Date(gasData.fetchedAt))} ${tzAbbr}`
-              : "Initializing..."
-            }{" "}
-            · Auto-refresh every 10s
+          {/* Gwei Explainer */}
+          <GweiExplainer />
+
+          {/* Footer */}
+          <footer className={`mt-6 text-center ${theme === "dark" ? "text-white/20" : "text-black/25"}`}>
+            <p className="text-[11px] font-mono">
+              {isLoaded
+                ? `Last updated: ${formatLocalDateTime(new Date(gasData.fetchedAt))} ${tzAbbr}`
+                : "Initializing..."
+              }{" "}
+              · Auto-refresh every 10s
+            </p>
+            <div className="mt-4">
+              <a
+                href="https://rayn.web.id"
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-semibold border transition-all duration-200 hover:scale-105 active:scale-95 ${
+                  theme === "dark"
+                    ? "bg-white/5 border-white/10 text-white/60 hover:bg-white/10 hover:text-white/90"
+                    : "bg-black/5 border-black/10 text-black/50 hover:bg-black/10 hover:text-black/80"
+                }`}
+              >
+                <ExternalLink size={12} />
+                Built by Rayn · rayn.web.id
+              </a>
+            </div>
           </footer>
 
         </div>
