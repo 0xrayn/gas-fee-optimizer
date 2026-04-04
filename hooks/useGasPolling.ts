@@ -22,13 +22,13 @@ function simulateGas(chain: Chain): GasData {
   return { low, avg, high, chain, fetchedAt: new Date() };
 }
 
+const EMPTY_GAS = (chain: Chain): GasData => ({
+  low: 0, avg: 0, high: 0, chain, fetchedAt: new Date(0),
+});
+
 export function useGasPolling(chain: Chain, initialData?: GasData) {
-  const [gasData, setGasData] = useState<GasData>(
-    initialData ?? simulateGas(chain)
-  );
-  const [history, setHistory] = useState<GasHistory[]>(() =>
-    buildInitialHistory(chain)
-  );
+  const [gasData, setGasData] = useState<GasData>(initialData ?? EMPTY_GAS(chain));
+  const [history, setHistory] = useState<GasHistory[]>([]);
   const [countdown, setCountdown] = useState(INTERVAL_MS / 1000);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -52,11 +52,9 @@ export function useGasPolling(chain: Chain, initialData?: GasData) {
           gas: data.avg,
           chain,
         };
-        const updated = [...prev, next];
-        return updated.slice(-MAX_HISTORY);
+        return [...prev, next].slice(-MAX_HISTORY);
       });
     } catch {
-      // fallback to simulation on client
       const sim = simulateGas(chain);
       setGasData(sim);
       setHistory((prev) => {
@@ -74,13 +72,12 @@ export function useGasPolling(chain: Chain, initialData?: GasData) {
     }
   }, [chain]);
 
-  // Reset history when chain changes
   useEffect(() => {
-    setHistory(buildInitialHistory(chain));
+    setGasData(EMPTY_GAS(chain));
+    setHistory([]);
     fetchGas();
   }, [chain, fetchGas]);
 
-  // Auto-refresh every 10s
   useEffect(() => {
     setCountdown(INTERVAL_MS / 1000);
 
@@ -102,7 +99,6 @@ export function useGasPolling(chain: Chain, initialData?: GasData) {
   const manualRefresh = useCallback(() => {
     fetchGas();
     setCountdown(INTERVAL_MS / 1000);
-    // Reset interval
     if (intervalRef.current) clearInterval(intervalRef.current);
     intervalRef.current = setInterval(() => {
       fetchGas();
@@ -111,15 +107,4 @@ export function useGasPolling(chain: Chain, initialData?: GasData) {
   }, [fetchGas]);
 
   return { gasData, history, countdown, isRefreshing, error, manualRefresh };
-}
-
-function buildInitialHistory(chain: Chain): GasHistory[] {
-  const cfg = SIM_BASE[chain];
-  const now = Date.now();
-  return Array.from({ length: 12 }, (_, i) => {
-    const t = new Date(now - (11 - i) * 5 * 60_000);
-    const noise = () => (Math.random() - 0.5) * cfg.spread;
-    const gas = parseFloat(Math.max(0.01, cfg.base + noise()).toFixed(3));
-    return { time: formatLocalTime(t), timeRaw: t.getTime(), gas, chain };
-  });
 }

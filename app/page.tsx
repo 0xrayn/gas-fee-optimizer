@@ -10,9 +10,6 @@ export const metadata = {
 };
 
 export default async function Home() {
-  // Server-side prefetch for initial data (reduces client flash)
-  // Dashboard will poll client-side after hydration
-  await getGasData("ETH");
-
+ 
   return <Dashboard />;
 }

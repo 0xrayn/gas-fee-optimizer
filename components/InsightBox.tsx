@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { useTheme } from "@/components/ThemeProvider";
 import { getBestWindowHint, getHourLocal, getUserTimezoneAbbr } from "@/lib/timezone";
 import type { GasData } from "@/types";
@@ -58,6 +59,13 @@ export default function InsightBox({ gas, alertThreshold }: InsightBoxProps) {
   const level = getGasLevel(gas.avg);
   const hourHint = getBestWindowHint(getHourLocal(new Date()));
   const tzAbbr = getUserTimezoneAbbr();
+
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setMounted(true), 0);
+    return () => clearTimeout(t);
+  }, []);
+
   const isUnderAlert = gas.avg <= alertThreshold;
 
   return (
@@ -70,7 +78,10 @@ export default function InsightBox({ gas, alertThreshold }: InsightBoxProps) {
     >
       {/* Status row */}
       <div className="flex items-center gap-3">
-        <div className="relative flex items-center justify-center size-9 rounded-full" style={{ background: `${level.color}18` }}>
+        <div
+          className="relative flex items-center justify-center size-9 rounded-full"
+          style={{ background: `${level.color}18` }}
+        >
           <span className={`size-2.5 rounded-full ${level.dot} relative`}>
             <span className={`absolute inset-0 rounded-full ${level.dot} animate-ping opacity-60`} />
           </span>
@@ -79,14 +90,14 @@ export default function InsightBox({ gas, alertThreshold }: InsightBoxProps) {
           <p className={`text-xs font-semibold uppercase tracking-widest ${theme === "dark" ? "text-white/40" : "text-black/40"}`}>
             Network Status
           </p>
-          <p className="text-base font-bold" style={{ color: level.color }}>
+          <p suppressHydrationWarning className="text-base font-bold" style={{ color: level.color }}>
             {level.label} — {gas.avg.toFixed(2)} Gwei avg
           </p>
         </div>
       </div>
 
-      {/* Alert triggered */}
-      {isUnderAlert && (
+      {/* Alert triggered — hanya render setelah mount */}
+      {mounted && isUnderAlert && (
         <div className="flex items-start gap-3 rounded-xl p-3 bg-emerald-500/10 border border-emerald-500/20">
           <span className="text-emerald-400 text-lg">🔔</span>
           <p className="text-sm text-emerald-400 font-medium">
