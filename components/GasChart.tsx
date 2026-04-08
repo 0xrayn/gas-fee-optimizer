@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import {
   AreaChart, Area, XAxis, YAxis, Tooltip,
   ResponsiveContainer, CartesianGrid, ReferenceLine,
@@ -42,8 +43,16 @@ export default function GasChart({ data, accent, avgValue }: GasChartProps) {
   const gridColor = "var(--chart-grid)";
   const textColor = "var(--chart-text)";
 
+  // Tunggu sampai browser selesai layout sebelum render chart
+  // Ini fix warning "width(-1) height(-1)" dari Recharts saat SSR/hydration
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
+
+  if (!mounted) {
+    return <div className="w-full h-[160px] sm:h-[200px] animate-pulse rounded-xl th-muted" />;
+  }
+
   return (
-    // Tinggi lebih kecil di mobile
     <div className="w-full h-[160px] sm:h-[200px]">
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart data={data} margin={{ top: 8, right: 4, left: -24, bottom: 0 }}>

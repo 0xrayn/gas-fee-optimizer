@@ -5,7 +5,7 @@ import Dashboard from "@/components/Dashboard";
 export const revalidate = 10;
 
 export const metadata = {
-  title: "GasWatch Pro — Ethereum Gas Optimizer",
+  title: "GasWatch Gas Optimizer",
   description: "Real-time Ethereum gas fee tracker with multi-chain support, auto-refresh, and smart insights.",
 };
 
