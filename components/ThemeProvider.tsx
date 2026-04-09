@@ -42,7 +42,7 @@ function readStoredTheme(): Theme | null {
     if (stored === "dark" || stored === "light") return stored;
     if (window.matchMedia("(prefers-color-scheme: light)").matches) return "light";
   } catch {
-    // SSR / private mode — ignore
+    // SSR / private mode  ignore
   }
   return null;
 }
@@ -72,7 +72,7 @@ export const ThemeProvider = memo(function ThemeProvider({
         } catch {
           /* ignore */
         }
-        // Apply ke DOM SYNC — visual langsung berubah, tidak nunggu re-render
+        // Apply ke DOM SYNC  visual langsung berubah, tidak nunggu re-render
         applyThemeToDom(next);
         return next;
       });

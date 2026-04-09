@@ -123,7 +123,7 @@ export default function Dashboard() {
             </div>
           )}
 
-          {/* Gas Cards — 3 kolom di semua ukuran, font dikecilkan di mobile */}
+          {/* Gas Cards  3 kolom di semua ukuran, font dikecilkan di mobile */}
           {!isLoaded ? (
             <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-4">
               {[0, 1, 2].map((i) => (
@@ -179,7 +179,7 @@ export default function Dashboard() {
             <GasChart key={chain} data={history} accent={chainCfg.color} avgValue={gasData.avg} />
           </div>
 
-          {/* Bottom grid — stack di mobile, 2 kolom di sm+ */}
+          {/* Bottom grid  stack di mobile, 2 kolom di sm+ */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
             <InsightBox gas={gasData} alertThreshold={alertThreshold} chain={chain} />
             <TxEstimator gas={gasData} chain={chain} nativePrice={ethPrice} />

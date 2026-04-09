@@ -19,7 +19,7 @@ const GAS_LEVELS: Record<Chain, { veryLow: number; low: number; moderate: number
 
 function getGasLevel(avg: number, chain: Chain) {
   const t = GAS_LEVELS[chain];
-  if (avg < t.veryLow)  return { label: "Very Low",  color: "#10b981", dot: "bg-emerald-400", advice: "Excellent — transact now with any speed setting." };
+  if (avg < t.veryLow)  return { label: "Very Low",  color: "#10b981", dot: "bg-emerald-400", advice: "Excellent  transact now with any speed setting." };
   if (avg < t.low)      return { label: "Low",       color: "#22c55e", dot: "bg-green-400",   advice: "Good conditions. Use 'Slow' to save even more." };
   if (avg < t.moderate) return { label: "Moderate",  color: "#f59e0b", dot: "bg-amber-400",   advice: "Acceptable for urgent txns. Consider waiting for cheaper gas." };
   if (avg < t.high)     return { label: "High",      color: "#f97316", dot: "bg-orange-400",  advice: "Elevated fees. Delay non-urgent transactions." };
@@ -51,7 +51,7 @@ export default function InsightBox({ gas, alertThreshold, chain }: InsightBoxPro
             {chainCfg.label} Network Status
           </p>
           <p suppressHydrationWarning className="text-base font-bold leading-tight" style={{ color: level.color }}>
-            {gas.avg > 0 ? `${level.label} — ${gas.avg.toFixed(gas.avg < 1 ? 4 : 2)} Gwei avg` : "Loading..."}
+            {gas.avg > 0 ? `${level.label}  ${gas.avg.toFixed(gas.avg < 1 ? 4 : 2)} Gwei avg` : "Loading..."}
           </p>
         </div>
       </div>
@@ -70,7 +70,7 @@ export default function InsightBox({ gas, alertThreshold, chain }: InsightBoxPro
           {[
             { icon: "💡", text: level.advice },
             { icon: "🕐", text: `${hourHint} (${tzAbbr})` },
-            { icon: "📊", text: `Spread: ${spread.toFixed(spread < 1 ? 4 : 2)} Gwei — ${spread > (GAS_LEVELS[chain].moderate * 0.5) ? "high volatility" : "stable network"}` },
+            { icon: "📊", text: `Spread: ${spread.toFixed(spread < 1 ? 4 : 2)} Gwei  ${spread > (GAS_LEVELS[chain].moderate * 0.5) ? "high volatility" : "stable network"}` },
             ...(gas.baseFee ? [{ icon: "⛽", text: `Base fee: ${gas.baseFee.toFixed(2)} Gwei` }] : []),
           ].map((item, i) => (
             <div key={i} className="flex items-start gap-2.5 text-sm th-text-secondary">

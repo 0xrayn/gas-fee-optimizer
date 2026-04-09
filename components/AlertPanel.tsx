@@ -54,7 +54,7 @@ export default function AlertPanel({
     if (isBelow && wasAbove && now - lastAlertedRef.current > cooldown) {
       try {
         new Notification(`⛽ ${chain} Gas Alert!`, {
-          body: `Gas is now ${currentGas.toFixed(2)} Gwei — below your threshold of ${threshold} Gwei.`,
+          body: `Gas is now ${currentGas.toFixed(2)} Gwei  below your threshold of ${threshold} Gwei.`,
           icon: "/favicon.ico",
           tag: `gas-alert-${chain}`,
         });
@@ -87,7 +87,7 @@ export default function AlertPanel({
       if (result === "granted") {
         setEnabled(true); setStatusMsg("Gas Alert enabled ✓"); setTimeout(() => setStatusMsg(""), 3000);
         new Notification("⛽ GasWatch Alerts Active", { body: `You'll be notified when ${chain} gas drops below ${threshold} Gwei.`, icon: "/favicon.ico", tag: "gas-alert-test" });
-      } else { setStatusMsg("Permission denied — enable it in browser settings"); setTimeout(() => setStatusMsg(""), 5000); }
+      } else { setStatusMsg("Permission denied  enable it in browser settings"); setTimeout(() => setStatusMsg(""), 5000); }
     } catch { setStatusMsg("Failed to request notification permission"); setTimeout(() => setStatusMsg(""), 4000); }
   }
 
@@ -109,7 +109,7 @@ export default function AlertPanel({
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2 min-w-0">
           <p className="text-xs font-semibold uppercase tracking-widest th-text-muted truncate">
-            Gas Alert — {chainCfg.label}
+            Gas Alert  {chainCfg.label}
           </p>
           {isActive && gasIsBelow && <span className="flex size-1.5 rounded-full bg-emerald-400 animate-ping shrink-0" />}
         </div>
@@ -140,7 +140,7 @@ export default function AlertPanel({
 
       <p className="text-sm mb-3 th-text-secondary">Notify when avg gas drops below</p>
 
-      {/* Input row — stacks nicely on small screens */}
+      {/* Input row  stacks nicely on small screens */}
       <div className="flex gap-2">
         <input
           type="number" min="0.01" max="9999" step={chain === "ARB" ? "0.01" : "1"}

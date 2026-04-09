@@ -50,14 +50,14 @@ export function getHourLocal(date: Date): number {
 
 export function getBestWindowHint(hourLocal: number): string {
     if (hourLocal >= 0 && hourLocal < 6) {
-        return "Late night / early morning — typically the cheapest gas window globally.";
+        return "Late night / early morning  typically the cheapest gas window globally.";
     } else if (hourLocal >= 6 && hourLocal < 10) {
-        return "Early morning — US market not yet active, moderate fees expected.";
+        return "Early morning  US market not yet active, moderate fees expected.";
     } else if (hourLocal >= 10 && hourLocal < 14) {
-        return "Midday — Asian markets active. Keep an eye on avg gas.";
+        return "Midday  Asian markets active. Keep an eye on avg gas.";
     } else if (hourLocal >= 14 && hourLocal < 20) {
-        return "Afternoon / evening — EU + US markets overlap. Gas tends to spike.";
+        return "Afternoon / evening  EU + US markets overlap. Gas tends to spike.";
     } else {
-        return "Late evening — US market winding down. Fees may start dropping.";
+        return "Late evening  US market winding down. Fees may start dropping.";
     }
 }

@@ -24,7 +24,7 @@ interface CacheEntry {
   ts: number;
 }
 
-// Module-level cache & in-flight map — persist across renders
+// Module-level cache & in-flight map  persist across renders
 const priceCache: Partial<Record<Chain, CacheEntry>> = {};
 const CACHE_TTL_MS = 55_000;
 const inflight: Partial<Record<Chain, Promise<CacheEntry | null>>> = {};
@@ -47,7 +47,7 @@ async function doFetch(c: Chain): Promise<CacheEntry | null> {
 
     priceCache[c] = entry;
 
-    // Saat fetch ARB, ETH price ikut di-return — cache sekalian
+    // Saat fetch ARB, ETH price ikut di-return  cache sekalian
     if (c === "ARB" && entry.ethPrice > 0) {
       priceCache["ETH"] = {
         price:       entry.ethPrice,
@@ -70,7 +70,7 @@ function fetchPrice(c: Chain): Promise<CacheEntry | null> {
   return inflight[c]!;
 }
 
-// Retry dengan exponential backoff — max 3x
+// Retry dengan exponential backoff  max 3x
 async function fetchWithRetry(c: Chain, retries = 3): Promise<CacheEntry | null> {
   for (let i = 0; i < retries; i++) {
     const result = await fetchPrice(c);
@@ -85,7 +85,7 @@ export function usePricePolling(chain: Chain): PriceData {
   const timerRef    = useRef<ReturnType<typeof setInterval> | null>(null);
   const fetchingRef = useRef(false);
 
-  // Inisialisasi state dari cache — cegah flash ke 0 saat ganti chain
+  // Inisialisasi state dari cache  cegah flash ke 0 saat ganti chain
   const getInitialState = () => {
     const seed = priceCache[chain];
     return {
@@ -116,12 +116,12 @@ export function usePricePolling(chain: Chain): PriceData {
       if (entry) {
         applyEntry(entry, c);
       } else {
-        // Fetch + retry semua gagal — pakai stale cache kalau ada
+        // Fetch + retry semua gagal  pakai stale cache kalau ada
         const stale = priceCache[c];
         if (stale && chainRef.current === c) {
           applyEntry(stale, c);
         } else if (chainRef.current === c) {
-          // Benar-benar tidak ada data — stop loading, tampilkan unavailable
+          // Benar-benar tidak ada data  stop loading, tampilkan unavailable
           setState((prev) => ({ ...prev, isLoading: false }));
         }
       }
@@ -130,7 +130,7 @@ export function usePricePolling(chain: Chain): PriceData {
     }
   }, [applyEntry]);
 
-  // FIX: visibilitychange — re-fetch saat tab aktif kembali dari background
+  // FIX: visibilitychange  re-fetch saat tab aktif kembali dari background
   // Browser throttle timer saat tab di-minimize, jadi polling bisa mati lama.
   // Listener ini mastiin data langsung direfresh begitu user balik ke tab.
   useEffect(() => {
@@ -153,7 +153,7 @@ export function usePricePolling(chain: Chain): PriceData {
     const now    = Date.now();
 
     if (cached && now - cached.ts < CACHE_TTL_MS) {
-      // Cache masih fresh — langsung tampil, tidak perlu fetch
+      // Cache masih fresh  langsung tampil, tidak perlu fetch
       setState({
         price:       cached.price,
         priceChange: cached.priceChange,
@@ -161,7 +161,7 @@ export function usePricePolling(chain: Chain): PriceData {
         isLoading:   false,
       });
     } else if (cached) {
-      // Stale cache — tampilkan dulu, fetch baru di background
+      // Stale cache  tampilkan dulu, fetch baru di background
       setState({
         price:       cached.price,
         priceChange: cached.priceChange,

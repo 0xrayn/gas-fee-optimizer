@@ -10,7 +10,7 @@ const COINGECKO_IDS: Record<Chain, string> = {
 };
 
 export const runtime = "edge";
-// Cache 55 detik di edge — CoinGecko free tier rate limit 30 req/menit
+// Cache 55 detik di edge  CoinGecko free tier rate limit 30 req/menit
 export const revalidate = 55;
 
 const VALID_CHAINS: Chain[] = ["ETH", "MATIC", "ARB"];
@@ -58,7 +58,7 @@ export async function GET(req: NextRequest) {
   } catch (err) {
     console.warn("[GasWatch] Price fetch error:", err);
     return NextResponse.json({ price: 0, priceChange: 0, chain }, {
-      status: 200, // Jangan return 5xx — client tetap bisa handle gracefully
+      status: 200, // Jangan return 5xx  client tetap bisa handle gracefully
       headers: { "Cache-Control": "s-maxage=10" },
     });
   }

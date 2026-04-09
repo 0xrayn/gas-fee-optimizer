@@ -1,19 +1,19 @@
 # GasWatch Pro ⛽
 
-Real-time Ethereum gas fee optimizer — multi-chain, live alerts, smart insights.
+Real-time Ethereum gas fee optimizer  multi-chain, live alerts, smart insights.
 
 ## Features
 
-- **Multi-chain** — Ethereum, Polygon, Arbitrum
+- **Multi-chain**  Ethereum, Polygon, Arbitrum
 - **Auto-refresh** every 10 seconds with smooth countdown ring
-- **Real API** — Etherscan / PolygonScan / Arbiscan (falls back to simulation if no keys)
-- **Dark / Light mode** — smooth toggle with OS preference detection
-- **Timezone-aware** — auto-detects user timezone, all timestamps localized
-- **Gas alert** — set a threshold, get highlighted when gas drops below it
-- **Tx Fee Estimator** — shows USD cost for common operations
-- **AI Insights** — context-aware advice based on time of day & gas level
-- **Animated** — smooth number counters, floating particles, Web3 grid background
-- **Tailwind v4** — @theme config, CSS-first, no tailwind.config.js
+- **Real API**  Etherscan / PolygonScan / Arbiscan (falls back to simulation if no keys)
+- **Dark / Light mode**  smooth toggle with OS preference detection
+- **Timezone-aware**  auto-detects user timezone, all timestamps localized
+- **Gas alert**  set a threshold, get highlighted when gas drops below it
+- **Tx Fee Estimator**  shows USD cost for common operations
+- **AI Insights**  context-aware advice based on time of day & gas level
+- **Animated**  smooth number counters, floating particles, Web3 grid background
+- **Tailwind v4**  @theme config, CSS-first, no tailwind.config.js
 
 ## Stack
 

@@ -5,27 +5,27 @@ export const runtime = "edge";
 
 const VALID_CHAINS: Chain[] = ["ETH", "MATIC", "ARB"];
 
-// Binance symbols — ARB kadang delisted/unavailable di beberapa region
+// Binance symbols  ARB kadang delisted/unavailable di beberapa region
 const BINANCE_SYMBOLS: Record<Chain, string> = {
   ETH:   "ETHUSDT",
   MATIC: "MATICUSDT",
   ARB:   "ARBUSDT",
 };
 
-// CoinGecko IDs — primary
+// CoinGecko IDs  primary
 const COINGECKO_IDS: Record<Chain, string> = {
   ETH:   "ethereum",
   MATIC: "matic-network",
   ARB:   "arbitrum",
 };
 
-// CoinGecko fallback IDs — dipakai kalau primary 404/empty
+// CoinGecko fallback IDs  dipakai kalau primary 404/empty
 const COINGECKO_FALLBACK: Partial<Record<Chain, string>> = {
   MATIC: "polygon-ecosystem-token",
   ARB:   "arbitrum-2",
 };
 
-// CryptoCompare symbols — fallback ke-4, gratis tanpa API key
+// CryptoCompare symbols  fallback ke-4, gratis tanpa API key
 const CRYPTOCOMPARE_SYMBOLS: Record<Chain, string> = {
   ETH:   "ETH",
   MATIC: "MATIC",
@@ -73,7 +73,7 @@ async function fetchCoinGecko(id: string): Promise<{ price: number; change: numb
   }
 }
 
-// ── CryptoCompare — fallback ke-4, gratis tanpa API key ───────────────────
+// ── CryptoCompare  fallback ke-4, gratis tanpa API key ───────────────────
 async function fetchCryptoCompare(symbol: string): Promise<{ price: number; change: number } | null> {
   try {
     const res = await fetch(

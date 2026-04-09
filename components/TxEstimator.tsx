@@ -98,7 +98,7 @@ export default function TxEstimator({ gas, chain, nativePrice = 0 }: TxEstimator
       <p className="text-[11px] th-text-faint mb-3 font-mono">
         @ {gweiPrice > 0
           ? `${gweiPrice.toFixed(gweiPrice < 1 ? 4 : 2)} Gwei`
-          : "—"}
+          : ""}
         {nativePrice > 0 && gweiPrice > 0 && (
           <span className="ml-1 th-text-ultrafaint">
             · {currency} = ${nativePrice.toLocaleString("en-US", { maximumFractionDigits: 2 })}
@@ -126,7 +126,7 @@ export default function TxEstimator({ gas, chain, nativePrice = 0 }: TxEstimator
                     ${feeUsd < 0.01 ? feeUsd.toFixed(4) : feeUsd.toFixed(2)}
                   </p>
                 ) : (
-                  <p className="text-xs font-mono th-text-faint">—</p>
+                  <p className="text-xs font-mono th-text-faint"></p>
                 )}
                 {feeNative > 0 && (
                   <p className="text-[10px] font-mono th-text-faint">

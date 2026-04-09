@@ -4,7 +4,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "GasWatch Pro",
-  description: "Real-time Ethereum gas fee optimizer — multi-chain, live alerts, smart insights.",
+  description: "Real-time Ethereum gas fee optimizer  multi-chain, live alerts, smart insights.",
 };
 
 export default function RootLayout({

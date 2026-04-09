@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /* ─────────────────────────────────────────────────────────────────────────
-   CSS VARIABLES — satu-satunya sumber kebenaran warna dark/light.
+   CSS VARIABLES  satu-satunya sumber kebenaran warna dark/light.
    Semua komponen pakai var() ini, bukan useTheme() di React.
    Transisi theme jadi PURE CSS → zero React re-render, zero lag.
    ───────────────────────────────────────────────────────────────────────── */
@@ -73,7 +73,7 @@
   color-scheme: light;
 }
 
-/* Transisi global — semua elemen ikut smooth saat data-theme berubah */
+/* Transisi global  semua elemen ikut smooth saat data-theme berubah */
 *, *::before, *::after {
   transition-property: background-color, border-color, color, fill, stroke;
   transition-duration: 200ms;
