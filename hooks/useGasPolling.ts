@@ -45,6 +45,17 @@ const EMPTY_GAS = (chain: Chain): GasData => ({
 const gasCache: Partial<Record<Chain, { data: GasData; history: GasHistory[]; ts: number }>> = {};
 const CACHE_TTL_MS = 55_000; // sedikit di bawah 1 menit
 
+// FIX: Evict cache entries yang sudah expired agar tidak ada memory leak
+// di SPA yang berjalan lama. Dipanggil setiap kali ada write ke cache.
+function evictStaleGasCache() {
+  const now = Date.now();
+  for (const key of Object.keys(gasCache) as Chain[]) {
+    if (gasCache[key] && now - gasCache[key]!.ts > CACHE_TTL_MS * 3) {
+      delete gasCache[key];
+    }
+  }
+}
+
 export function useGasPolling(chain: Chain, initialData?: GasData) {
   const initCache = gasCache[chain];
 
@@ -85,6 +96,7 @@ export function useGasPolling(chain: Chain, initialData?: GasData) {
       setHistory((prev) => {
         const filtered  = prev.filter((h) => h.chain === currentChain);
         const newHistory = [...filtered, pt].slice(-MAX_HISTORY);
+        evictStaleGasCache();
         gasCache[currentChain] = { data, history: newHistory, ts: Date.now() };
         return newHistory;
       });
@@ -97,6 +109,7 @@ export function useGasPolling(chain: Chain, initialData?: GasData) {
       setHistory((prev) => {
         const filtered  = prev.filter((h) => h.chain === currentChain);
         const newHistory = [...filtered, pt].slice(-MAX_HISTORY);
+        evictStaleGasCache();
         gasCache[currentChain] = { data: sim, history: newHistory, ts: Date.now() };
         return newHistory;
       });
@@ -147,11 +160,20 @@ export function useGasPolling(chain: Chain, initialData?: GasData) {
   const manualRefresh = useCallback(() => {
     fetchGas();
     setCountdown(INTERVAL_MS / 1000);
-    if (intervalRef.current) clearInterval(intervalRef.current);
+
+    // FIX: Reset kedua interval (fetch + countdown) supaya countdown visual
+    // selalu sinkron dengan siklus fetch setelah manual refresh.
+    if (intervalRef.current)  clearInterval(intervalRef.current);
+    if (countdownRef.current) clearInterval(countdownRef.current);
+
     intervalRef.current = setInterval(() => {
       fetchGas();
       setCountdown(INTERVAL_MS / 1000);
     }, INTERVAL_MS);
+
+    countdownRef.current = setInterval(() => {
+      setCountdown((c) => Math.max(0, c - 1));
+    }, 1000);
   }, [fetchGas]);
 
   return { gasData, history, countdown, isRefreshing, error, manualRefresh };

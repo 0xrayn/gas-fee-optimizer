@@ -53,8 +53,10 @@ export default function GasChart({ data, accent, avgValue }: GasChartProps) {
   }
 
   return (
-    <div className="w-full h-[160px] sm:h-[200px]">
-      <ResponsiveContainer width="100%" height="100%">
+    // Explicit pixel height pada ResponsiveContainer — bukan 100% — supaya
+    // Recharts tidak pernah dapat dimensi -1 dari parent yang belum selesai layout.
+    <div className="w-full" style={{ minHeight: 160 }}>
+      <ResponsiveContainer width="100%" height={200}>
         <AreaChart data={data} margin={{ top: 8, right: 4, left: -24, bottom: 0 }}>
           <defs>
             <linearGradient id="gasGrad" x1="0" y1="0" x2="0" y2="1">

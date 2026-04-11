@@ -32,16 +32,20 @@ const CRYPTOCOMPARE_SYMBOLS: Record<Chain, string> = {
   ARB:   "ARB",
 };
 
+// FIX: Helper timeout yang kompatibel Edge Runtime Vercel.
+// AbortSignal.timeout() tidak tersedia di semua Edge environment.
+function timeoutFetch(url: string, ms: number, init?: RequestInit): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), ms);
+  return fetch(url, { ...init, signal: controller.signal }).finally(() => clearTimeout(timer));
+}
+
 // ── Binance ────────────────────────────────────────────────────────────────
 async function fetchBinance(symbol: string): Promise<{ price: number; change: number } | null> {
   try {
     const [tickerRes, statsRes] = await Promise.all([
-      fetch(`https://api.binance.com/api/v3/ticker/price?symbol=${symbol}`, {
-        signal: AbortSignal.timeout(4000),
-      }),
-      fetch(`https://api.binance.com/api/v3/ticker/24hr?symbol=${symbol}`, {
-        signal: AbortSignal.timeout(4000),
-      }),
+      timeoutFetch(`https://api.binance.com/api/v3/ticker/price?symbol=${symbol}`, 4000),
+      timeoutFetch(`https://api.binance.com/api/v3/ticker/24hr?symbol=${symbol}`, 4000),
     ]);
     if (!tickerRes.ok || !statsRes.ok) return null;
     const [ticker, stats] = await Promise.all([tickerRes.json(), statsRes.json()]);
@@ -57,9 +61,10 @@ async function fetchBinance(symbol: string): Promise<{ price: number; change: nu
 // ── CoinGecko ─────────────────────────────────────────────────────────────
 async function fetchCoinGecko(id: string): Promise<{ price: number; change: number } | null> {
   try {
-    const res = await fetch(
+    const res = await timeoutFetch(
       `https://api.coingecko.com/api/v3/simple/price?ids=${id}&vs_currencies=usd&include_24hr_change=true`,
-      { signal: AbortSignal.timeout(6000), headers: { Accept: "application/json" } }
+      6000,
+      { headers: { Accept: "application/json" } }
     );
     if (!res.ok) return null;
     const data = await res.json();
@@ -76,12 +81,10 @@ async function fetchCoinGecko(id: string): Promise<{ price: number; change: numb
 // ── CryptoCompare  fallback ke-4, gratis tanpa API key ───────────────────
 async function fetchCryptoCompare(symbol: string): Promise<{ price: number; change: number } | null> {
   try {
-    const res = await fetch(
+    const res = await timeoutFetch(
       `https://min-api.cryptocompare.com/data/pricemultifull?fsyms=${symbol}&tsyms=USD`,
-      {
-        signal: AbortSignal.timeout(5000),
-        headers: { Accept: "application/json" },
-      }
+      5000,
+      { headers: { Accept: "application/json" } }
     );
     if (!res.ok) return null;
     const data = await res.json();

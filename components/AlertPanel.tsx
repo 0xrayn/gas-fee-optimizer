@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Bell, BellOff, BellRing } from "lucide-react";
 import { CHAINS } from "@/lib/chains";
 import type { Chain } from "@/types";
@@ -14,6 +14,13 @@ interface AlertPanelProps {
 
 type PermState = "default" | "granted" | "denied" | "unsupported";
 
+// FIX: Baca permission langsung dari browser API, bukan dari ref,
+// supaya state selalu sinkron dengan kondisi real browser.
+function readPermState(): PermState {
+  if (typeof window === "undefined" || !("Notification" in window)) return "unsupported";
+  return Notification.permission as PermState;
+}
+
 export default function AlertPanel({
   threshold, onThresholdChange, currentGas = 0, chain = "ETH",
 }: AlertPanelProps) {
@@ -24,83 +31,139 @@ export default function AlertPanel({
   const [enabled,   setEnabled]   = useState(false);
   const [statusMsg, setStatusMsg] = useState("");
 
-  const permRef          = useRef<PermState>("default");
-  const [tick, setTick]  = useState(0);
-  const lastAlertedRef   = useRef(0);
-  const prevGasRef       = useRef(0);
+  // FIX: Ganti permRef + tick pattern menjadi useState biasa agar reactive
+  // dan tidak ada celah stale state saat permission berubah dari luar komponen.
+  const [permState, setPermState] = useState<PermState>("default");
 
+  const lastAlertedRef = useRef(0);
+  const prevGasRef     = useRef<number | null>(null); // FIX: null = belum ada data, bukan 0
+
+  // Sync permState dari browser saat mount
+  useEffect(() => {
+    setPermState(readPermState());
+  }, []);
+
+  // Reset saat chain / threshold berubah
+  // FIX: prevGasRef di-set ke null (bukan 0) supaya first-tick tidak salah evaluasi wasAbove
   useEffect(() => {
     setInput(String(threshold));
     setSaved(false);
     setStatusMsg("");
-    prevGasRef.current    = 0;
+    prevGasRef.current     = null;
     lastAlertedRef.current = 0;
   }, [chain, threshold]);
 
+  // Cek & kirim notifikasi
   useEffect(() => {
-    const real: PermState = !("Notification" in window)
-      ? "unsupported"
-      : (Notification.permission as PermState);
-    if (permRef.current !== real) { permRef.current = real; setTick((t) => t + 1); }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (!enabled || permState !== "granted" || currentGas <= 0) return;
 
-  useEffect(() => {
-    if (!enabled || permRef.current !== "granted" || currentGas <= 0) return;
+    // FIX: Jika ini data pertama setelah reset (prevGasRef masih null),
+    // simpan nilai saat ini sebagai baseline dan skip trigger.
+    // Notifikasi baru dievaluasi pada update berikutnya.
+    if (prevGasRef.current === null) {
+      prevGasRef.current = currentGas;
+      return;
+    }
+
     const wasAbove = prevGasRef.current > threshold;
     const isBelow  = currentGas < threshold;
     const now      = Date.now();
     const cooldown = 5 * 60 * 1000;
+
     if (isBelow && wasAbove && now - lastAlertedRef.current > cooldown) {
       try {
         new Notification(`⛽ ${chain} Gas Alert!`, {
-          body: `Gas is now ${currentGas.toFixed(2)} Gwei  below your threshold of ${threshold} Gwei.`,
+          body: `Gas is now ${currentGas.toFixed(2)} Gwei — below your threshold of ${threshold} Gwei.`,
           icon: "/favicon.ico",
           tag: `gas-alert-${chain}`,
         });
         lastAlertedRef.current = now;
-        setTimeout(() => { setStatusMsg(`Alert sent: ${currentGas.toFixed(2)} Gwei`); setTimeout(() => setStatusMsg(""), 4000); }, 0);
-      } catch { /* silently fail */ }
+        setTimeout(() => {
+          setStatusMsg(`Alert sent: ${currentGas.toFixed(2)} Gwei`);
+          setTimeout(() => setStatusMsg(""), 4000);
+        }, 0);
+      } catch (err) {
+        // FIX: Jangan silent fail — log dan tampilkan feedback ke user
+        console.warn("[GasWatch] Failed to send notification:", err);
+        setStatusMsg("Gagal mengirim notifikasi. Cek izin browser.");
+        setTimeout(() => setStatusMsg(""), 4000);
+      }
     }
-    prevGasRef.current = currentGas;
-  }, [currentGas, threshold, enabled, chain, tick]);
 
-  const permState     = permRef.current;
+    prevGasRef.current = currentGas;
+  }, [currentGas, threshold, enabled, chain, permState]);
+
   const isActive      = enabled && permState === "granted";
   const isDenied      = permState === "denied";
   const isUnsupported = permState === "unsupported";
   const gasIsBelow    = currentGas > 0 && currentGas < threshold;
 
-  async function requestPermissionAndEnable() {
-    if (!("Notification" in window)) { setStatusMsg("This browser does not support notifications"); return; }
-    if (Notification.permission === "granted") {
-      permRef.current = "granted"; setEnabled(true); setTick((t) => t + 1);
-      setStatusMsg("Gas Alert enabled ✓"); setTimeout(() => setStatusMsg(""), 3000); return;
+  const requestPermissionAndEnable = useCallback(async () => {
+    if (!("Notification" in window)) {
+      setPermState("unsupported");
+      setStatusMsg("Browser ini tidak mendukung notifikasi");
+      return;
     }
-    if (Notification.permission === "denied") {
-      permRef.current = "denied"; setTick((t) => t + 1);
-      setStatusMsg("Permission denied. Enable it in your browser settings."); setTimeout(() => setStatusMsg(""), 5000); return;
+
+    // FIX: Selalu baca permission terbaru dari browser sebelum memutuskan langkah
+    const current = Notification.permission as PermState;
+    setPermState(current);
+
+    if (current === "granted") {
+      setEnabled(true);
+      setStatusMsg("Gas Alert enabled ✓");
+      setTimeout(() => setStatusMsg(""), 3000);
+      return;
     }
+    if (current === "denied") {
+      setStatusMsg("Permission denied. Enable it in your browser settings.");
+      setTimeout(() => setStatusMsg(""), 5000);
+      return;
+    }
+
     try {
       const result = await Notification.requestPermission();
-      permRef.current = result as PermState; setTick((t) => t + 1);
+      setPermState(result as PermState);
       if (result === "granted") {
-        setEnabled(true); setStatusMsg("Gas Alert enabled ✓"); setTimeout(() => setStatusMsg(""), 3000);
-        new Notification("⛽ GasWatch Alerts Active", { body: `You'll be notified when ${chain} gas drops below ${threshold} Gwei.`, icon: "/favicon.ico", tag: "gas-alert-test" });
-      } else { setStatusMsg("Permission denied  enable it in browser settings"); setTimeout(() => setStatusMsg(""), 5000); }
-    } catch { setStatusMsg("Failed to request notification permission"); setTimeout(() => setStatusMsg(""), 4000); }
-  }
+        setEnabled(true);
+        setStatusMsg("Gas Alert enabled ✓");
+        setTimeout(() => setStatusMsg(""), 3000);
+        new Notification("⛽ GasWatch Alerts Active", {
+          body: `You'll be notified when ${chain} gas drops below ${threshold} Gwei.`,
+          icon: "/favicon.ico",
+          tag: "gas-alert-test",
+        });
+      } else {
+        setStatusMsg("Permission denied — enable it in browser settings");
+        setTimeout(() => setStatusMsg(""), 5000);
+      }
+    } catch (err) {
+      console.warn("[GasWatch] requestPermission error:", err);
+      setStatusMsg("Failed to request notification permission");
+      setTimeout(() => setStatusMsg(""), 4000);
+    }
+  }, [chain, threshold]);
 
   function toggleEnabled() {
-    if (!enabled) { requestPermissionAndEnable(); }
-    else { setEnabled(false); setStatusMsg("Gas Alert disabled"); setTimeout(() => setStatusMsg(""), 2000); }
+    if (!enabled) {
+      requestPermissionAndEnable();
+    } else {
+      setEnabled(false);
+      setStatusMsg("Gas Alert disabled");
+      setTimeout(() => setStatusMsg(""), 2000);
+    }
   }
 
   function handleSave() {
     const v = parseFloat(input);
     if (!isNaN(v) && v > 0) {
-      onThresholdChange(v); setSaved(true); setTimeout(() => setSaved(false), 2000);
-      if (enabled) { setStatusMsg(`Threshold updated: ${v} Gwei`); setTimeout(() => setStatusMsg(""), 3000); }
+      onThresholdChange(v);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+      if (enabled) {
+        setStatusMsg(`Threshold updated: ${v} Gwei`);
+        setTimeout(() => setStatusMsg(""), 3000);
+      }
     }
   }
 
@@ -109,7 +172,7 @@ export default function AlertPanel({
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2 min-w-0">
           <p className="text-xs font-semibold uppercase tracking-widest th-text-muted truncate">
-            Gas Alert  {chainCfg.label}
+            Gas Alert · {chainCfg.label}
           </p>
           {isActive && gasIsBelow && <span className="flex size-1.5 rounded-full bg-emerald-400 animate-ping shrink-0" />}
         </div>
@@ -140,7 +203,6 @@ export default function AlertPanel({
 
       <p className="text-sm mb-3 th-text-secondary">Notify when avg gas drops below</p>
 
-      {/* Input row  stacks nicely on small screens */}
       <div className="flex gap-2">
         <input
           type="number" min="0.01" max="9999" step={chain === "ARB" ? "0.01" : "1"}
