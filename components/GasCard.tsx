@@ -15,11 +15,39 @@ export default function GasCard({ title, value, subtitle, accent, delay = 0, bad
   const displayRef = useRef<HTMLSpanElement>(null);
   const prevRef = useRef(value);
 
+  // Reset prevRef jika value berubah sangat drastis (ganti chain),
+  // supaya animasi tidak berjalan dari nilai chain sebelumnya.
+  // Harus dijalankan SEBELUM effect animasi agar `from` sudah benar.
+  // Gunakan ref terpisah untuk flag "sudah reset" supaya effect animasi
+  // bisa langsung pakai nilai baru tanpa melewati animasi dari nilai lama.
+  const skipAnimRef = useRef(false);
+  useEffect(() => {
+    const ratio = prevRef.current > 0 ? Math.max(value, prevRef.current) / Math.min(value, prevRef.current) : 0;
+    if (ratio > 10 || prevRef.current === 0) {
+      prevRef.current = value;
+      skipAnimRef.current = true;
+    } else {
+      skipAnimRef.current = false;
+    }
+  }, [value]);
+
   useEffect(() => {
     const el = displayRef.current;
     if (!el) return;
+
+    // Jika sebelumnya 0 (empty/initial state) atau chain baru dengan nilai
+    // sangat berbeda, langsung tampilkan nilai real tanpa animasi
+    // agar tidak terlihat "turun ke 0.00" atau animasi cross-chain
+    if (skipAnimRef.current || value === 0) {
+      el.textContent = value.toFixed(value < 1 ? 3 : 2);
+      prevRef.current = value;
+      skipAnimRef.current = false;
+      return;
+    }
+
     const from = prevRef.current;
     const to = value;
+
     const duration = 600;
     const start = performance.now();
     const tick = (now: number) => {

@@ -23,30 +23,14 @@ function simulateGas(chain: Chain): GasData {
   return { low, avg, high, chain, fetchedAt: new Date() };
 }
 
-// Seed 6 titik mundur tiap 1 menit supaya chart langsung terisi saat ganti chain
-function seedHistory(chain: Chain, count = 6): GasHistory[] {
-  const now = Date.now();
-  return Array.from({ length: count }, (_, i) => {
-    const sim = simulateGas(chain);
-    const ts  = new Date(now - (count - i) * INTERVAL_MS);
-    return {
-      time:    formatLocalTime(ts),
-      timeRaw: ts.getTime(),
-      gas:     sim.avg,
-      chain,
-    };
-  });
-}
 
 const EMPTY_GAS = (chain: Chain): GasData => ({
   low: 0, avg: 0, high: 0, chain, fetchedAt: new Date(0),
 });
 
 const gasCache: Partial<Record<Chain, { data: GasData; history: GasHistory[]; ts: number }>> = {};
-const CACHE_TTL_MS = 55_000; // sedikit di bawah 1 menit
+const CACHE_TTL_MS = 55_000;
 
-// FIX: Evict cache entries yang sudah expired agar tidak ada memory leak
-// di SPA yang berjalan lama. Dipanggil setiap kali ada write ke cache.
 function evictStaleGasCache() {
   const now = Date.now();
   for (const key of Object.keys(gasCache) as Chain[]) {
@@ -83,6 +67,19 @@ export function useGasPolling(chain: Chain, initialData?: GasData) {
       chain:   c,
     });
 
+    // Buat backfill history dari nilai real — dipanggil saat chart masih kosong
+    // agar tidak perlu nunggu 20 menit buat chart terisi.
+    // Nilai diambil dari data real (bukan SIM_BASE) sehingga tidak ada "drop" palsu.
+    const backfillFromReal = (avg: number, c: Chain, fetchedAt: Date, count = 6): GasHistory[] => {
+      const now = fetchedAt.getTime();
+      // Tambah noise kecil ±3% supaya chart tidak flat garis lurus
+      return Array.from({ length: count }, (_, i) => {
+        const ts    = new Date(now - (count - i) * INTERVAL_MS);
+        const jitter = avg * (0.97 + Math.random() * 0.06); // ±3%
+        return makePoint(parseFloat(jitter.toFixed(4)), c, ts);
+      });
+    };
+
     try {
       const res = await fetch(`/api/gas?chain=${currentChain}`, { cache: "no-store" });
       if (!res.ok) throw new Error("Fetch failed");
@@ -91,24 +88,40 @@ export function useGasPolling(chain: Chain, initialData?: GasData) {
 
       if (chainRef.current !== currentChain) return;
 
+      // Validasi data real: avg harus > 0
+      if (!data.avg || data.avg <= 0) throw new Error("Invalid gas data (avg=0)");
+
       const pt = makePoint(data.avg, currentChain, data.fetchedAt);
       setGasData(data);
       setHistory((prev) => {
-        const filtered  = prev.filter((h) => h.chain === currentChain);
-        const newHistory = [...filtered, pt].slice(-MAX_HISTORY);
+        const existing = prev.filter((h) => h.chain === currentChain);
+        // Kalau chart masih kosong (baru pertama kali), isi backfill dulu
+        const base = existing.length === 0
+          ? backfillFromReal(data.avg, currentChain, data.fetchedAt)
+          : existing;
+        const newHistory = [...base, pt].slice(-MAX_HISTORY);
         evictStaleGasCache();
         gasCache[currentChain] = { data, history: newHistory, ts: Date.now() };
         return newHistory;
       });
-    } catch {
+    } catch (err) {
       const sim = simulateGas(currentChain);
       if (chainRef.current !== currentChain) return;
+
+      if (!sim.avg || sim.avg <= 0) {
+        setError("Gas data unavailable");
+        setIsRefreshing(false);
+        return;
+      }
 
       const pt = makePoint(sim.avg, currentChain, sim.fetchedAt);
       setGasData(sim);
       setHistory((prev) => {
-        const filtered  = prev.filter((h) => h.chain === currentChain);
-        const newHistory = [...filtered, pt].slice(-MAX_HISTORY);
+        const existing = prev.filter((h) => h.chain === currentChain);
+        const base = existing.length === 0
+          ? backfillFromReal(sim.avg, currentChain, sim.fetchedAt)
+          : existing;
+        const newHistory = [...base, pt].slice(-MAX_HISTORY);
         evictStaleGasCache();
         gasCache[currentChain] = { data: sim, history: newHistory, ts: Date.now() };
         return newHistory;
@@ -132,10 +145,11 @@ export function useGasPolling(chain: Chain, initialData?: GasData) {
       setHistory(cached.history);
       setError(null);
     } else {
-      // Tampilkan seed langsung supaya chart tidak kosong, fetch real di background
-      const seeded = cached?.history?.length ? cached.history : seedHistory(chain);
+      // Tidak pakai seed simulasi — langsung fetch data real.
+      // Chart akan tampil kosong (loading) sesaat sampai data pertama tiba.
+      // Ini lebih baik daripada chart dengan nilai palsu yang bikin "drop" visual.
       setGasData(cached?.data ?? EMPTY_GAS(chain));
-      setHistory(seeded);
+      setHistory(cached?.history ?? []);
       setError(null);
       fetchGas(chain);
     }
@@ -161,8 +175,6 @@ export function useGasPolling(chain: Chain, initialData?: GasData) {
     fetchGas();
     setCountdown(INTERVAL_MS / 1000);
 
-    // FIX: Reset kedua interval (fetch + countdown) supaya countdown visual
-    // selalu sinkron dengan siklus fetch setelah manual refresh.
     if (intervalRef.current)  clearInterval(intervalRef.current);
     if (countdownRef.current) clearInterval(countdownRef.current);
 

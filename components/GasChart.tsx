@@ -43,6 +43,10 @@ export default function GasChart({ data, accent, avgValue }: GasChartProps) {
   const gridColor = "var(--chart-grid)";
   const textColor = "var(--chart-text)";
 
+  // FIX: Filter titik gas <= 0 agar chart tidak drop ke 0.00
+  // Titik dengan gas=0 bisa masuk dari EMPTY_GAS state atau seed yang bermasalah
+  const safeData = data.filter((h) => typeof h.gas === "number" && h.gas > 0);
+
   // Tunggu sampai browser selesai layout sebelum render chart
   // Ini fix warning "width(-1) height(-1)" dari Recharts saat SSR/hydration
   const [mounted, setMounted] = useState(false);
@@ -52,12 +56,20 @@ export default function GasChart({ data, accent, avgValue }: GasChartProps) {
     return <div className="w-full h-[160px] sm:h-[200px] animate-pulse rounded-xl th-muted" />;
   }
 
+  if (safeData.length === 0) {
+    return (
+      <div className="w-full h-[160px] sm:h-[200px] flex items-center justify-center">
+        <span className="text-xs font-mono th-text-faint animate-pulse">Fetching gas data...</span>
+      </div>
+    );
+  }
+
   return (
     // Explicit pixel height pada ResponsiveContainer — bukan 100% — supaya
     // Recharts tidak pernah dapat dimensi -1 dari parent yang belum selesai layout.
     <div className="w-full" style={{ minHeight: 160 }}>
       <ResponsiveContainer width="100%" height={200}>
-        <AreaChart data={data} margin={{ top: 8, right: 4, left: -24, bottom: 0 }}>
+        <AreaChart data={safeData} margin={{ top: 8, right: 4, left: -24, bottom: 0 }}>
           <defs>
             <linearGradient id="gasGrad" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%"   stopColor={accent} stopOpacity={0.3} />
@@ -74,9 +86,10 @@ export default function GasChart({ data, accent, avgValue }: GasChartProps) {
             tick={{ fill: textColor, fontSize: 9, fontFamily: "monospace" }}
             axisLine={false} tickLine={false}
             tickFormatter={(v) => (v < 1 ? v.toFixed(2) : Math.round(v).toString())}
+            domain={["auto", "auto"]}
           />
           <Tooltip content={<CustomTooltip />} />
-          {avgValue && (
+          {avgValue && avgValue > 0 && (
             <ReferenceLine y={avgValue} stroke={accent} strokeDasharray="6 3" strokeOpacity={0.4} />
           )}
           <Area
