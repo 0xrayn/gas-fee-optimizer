@@ -182,7 +182,9 @@ export default function Dashboard() {
           {/* Bottom grid  stack di mobile, 2 kolom di sm+ */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
             <InsightBox gas={gasData} alertThreshold={alertThreshold} chain={chain} />
-            <TxEstimator gas={gasData} chain={chain} nativePrice={ethPrice} />
+            {/* nativePrice = harga token chain (ETH/MATIC/ARB) untuk label ticker. */}
+            {/* ethPriceForFee = harga ETH untuk kalkulasi fee ARB (gas L2 dibayar ETH). */}
+            <TxEstimator gas={gasData} chain={chain} nativePrice={price} ethPriceForFee={ethPrice} />
           </div>
 
           {/* Alert Panel */}

@@ -9,7 +9,8 @@ export const CHAINS: Record<string, ChainConfig> = {
     ringClass: "ring-[#627EEA]/30",
     bgAccent: "bg-[#627EEA]/10",
     apiSymbol: "ETH",
-    apiBase: "https://api.etherscan.io/api",
+    // apiBase dihapus — gas fetching pakai Etherscan V2 di lib/getGas.ts
+    // yang punya base URL sendiri (SCAN_V2_BASE). Field ini tidak terpakai.
     explorerName: "Etherscan",
     nativeCurrency: "ETH",
   },
@@ -21,7 +22,6 @@ export const CHAINS: Record<string, ChainConfig> = {
     ringClass: "ring-[#8247E5]/30",
     bgAccent: "bg-[#8247E5]/10",
     apiSymbol: "MATIC",
-    apiBase: "https://api.polygonscan.com/api",
     explorerName: "PolygonScan",
     nativeCurrency: "MATIC",
   },
@@ -33,9 +33,12 @@ export const CHAINS: Record<string, ChainConfig> = {
     ringClass: "ring-[#28A0F0]/30",
     bgAccent: "bg-[#28A0F0]/10",
     apiSymbol: "ARB",
-    apiBase: "https://api.arbiscan.io/api",
     explorerName: "Arbiscan",
-    nativeCurrency: "ETH",
+    // ARB adalah governance token Arbitrum, bukan gas token.
+    // Gas di Arbitrum One tetap dibayar menggunakan ETH (seperti semua L2 Ethereum).
+    // nativeCurrency "ARB" di sini hanya untuk label di price ticker & TxEstimator.
+    // Kalkulasi fee USD di TxEstimator menggunakan ethPrice (prop terpisah).
+    nativeCurrency: "ARB",
   },
 };
 

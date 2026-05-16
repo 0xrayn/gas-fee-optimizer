@@ -8,10 +8,12 @@ import { formatLocalTime } from "@/lib/timezone";
 const INTERVAL_MS = 60_000;
 const MAX_HISTORY = 20;
 
+// Nilai ini harus konsisten dengan lib/getGas.ts simulateGas()
+// karena keduanya dipakai sebagai fallback saat API gagal.
 const SIM_BASE: Record<Chain, { base: number; spread: number }> = {
   ETH:   { base: 18,   spread: 12   },
-  MATIC: { base: 80,   spread: 40   },
-  ARB:   { base: 0.08, spread: 0.06 },
+  MATIC: { base: 150,  spread: 60   }, // fix: disesuaikan dengan lib/getGas.ts
+  ARB:   { base: 0.02, spread: 0.015 }, // fix: disesuaikan dengan lib/getGas.ts
 };
 
 function simulateGas(chain: Chain): GasData {

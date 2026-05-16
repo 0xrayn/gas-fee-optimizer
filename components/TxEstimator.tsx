@@ -8,6 +8,10 @@ interface TxEstimatorProps {
   gas: GasData;
   chain: Chain;
   nativePrice?: number;
+  // Khusus ARB: harga ETH untuk kalkulasi fee USD.
+  // Arbitrum adalah L2 Ethereum — gas dibayar dengan ETH, bukan token ARB.
+  // nativePrice tetap dipakai untuk menampilkan harga ARB di label ticker.
+  ethPriceForFee?: number;
 }
 
 const TX_TYPES_BY_CHAIN: Record<Chain, { name: string; gasUnits: number; icon: string }[]> = {
@@ -54,7 +58,7 @@ function feeLevel(gwei: number, chain: Chain): { cls: string; label: string } {
 
 const MODE_LABELS: Record<GasMode, string> = { low: "Slow", avg: "Standard", high: "Fast" };
 
-export default function TxEstimator({ gas, chain, nativePrice = 0 }: TxEstimatorProps) {
+export default function TxEstimator({ gas, chain, nativePrice = 0, ethPriceForFee }: TxEstimatorProps) {
   const [mode, setMode] = useState<GasMode>("avg");
 
   const chainCfg  = CHAINS[chain];
@@ -62,6 +66,12 @@ export default function TxEstimator({ gas, chain, nativePrice = 0 }: TxEstimator
   const txTypes   = TX_TYPES_BY_CHAIN[chain];
   const gweiPrice = gas[mode];
   const level     = feeLevel(gweiPrice, chain);
+
+  // ARB: fee USD dihitung dari ETH price (gas dibayar ETH di L2),
+  // tapi label ticker tetap menampilkan harga ARB (nativePrice).
+  const feeCalcPrice = chain === "ARB"
+    ? (ethPriceForFee ?? 0)
+    : nativePrice;
 
   return (
     <div className="rounded-2xl border p-4 sm:p-5 th-card th-border-card backdrop-blur-sm">
@@ -98,10 +108,14 @@ export default function TxEstimator({ gas, chain, nativePrice = 0 }: TxEstimator
       <p className="text-[11px] th-text-faint mb-3 font-mono">
         @ {gweiPrice > 0
           ? `${gweiPrice.toFixed(gweiPrice < 1 ? 4 : 2)} Gwei`
-          : ""}
+          : "—"}
         {nativePrice > 0 && gweiPrice > 0 && (
           <span className="ml-1 th-text-ultrafaint">
             · {currency} = ${nativePrice.toLocaleString("en-US", { maximumFractionDigits: 2 })}
+            {/* ARB: fee dihitung dari ETH price karena gas L2 dibayar ETH */}
+            {chain === "ARB" && ethPriceForFee && ethPriceForFee > 0 && (
+              <span className="ml-1 opacity-60">(fee via ETH ${ethPriceForFee.toLocaleString("en-US", { maximumFractionDigits: 0 })})</span>
+            )}
           </span>
         )}
       </p>
@@ -110,7 +124,8 @@ export default function TxEstimator({ gas, chain, nativePrice = 0 }: TxEstimator
       <div className="space-y-1.5">
         {txTypes.map((tx) => {
           const feeNative = gweiPrice > 0 ? calcFeeNative(gweiPrice, tx.gasUnits) : 0;
-          const feeUsd    = nativePrice > 0 && feeNative > 0 ? feeNative * nativePrice : null;
+          // Fee dalam ETH (bukan ARB) karena gas Arbitrum dibayar ETH
+          const feeUsd    = feeCalcPrice > 0 && feeNative > 0 ? feeNative * feeCalcPrice : null;
           return (
             <div
               key={tx.name}
@@ -126,11 +141,12 @@ export default function TxEstimator({ gas, chain, nativePrice = 0 }: TxEstimator
                     ${feeUsd < 0.01 ? feeUsd.toFixed(4) : feeUsd.toFixed(2)}
                   </p>
                 ) : (
-                  <p className="text-xs font-mono th-text-faint"></p>
+                  <p className="text-xs font-mono th-text-faint">—</p>
                 )}
                 {feeNative > 0 && (
                   <p className="text-[10px] font-mono th-text-faint">
-                    {feeNative < 0.0001 ? feeNative.toFixed(6) : feeNative.toFixed(5)} {currency}
+                    {/* ARB: tampilkan dalam ETH karena itu yang benar-benar dibayar */}
+                    {feeNative < 0.0001 ? feeNative.toFixed(6) : feeNative.toFixed(5)} {chain === "ARB" ? "ETH" : currency}
                   </p>
                 )}
               </div>
@@ -138,6 +154,14 @@ export default function TxEstimator({ gas, chain, nativePrice = 0 }: TxEstimator
           );
         })}
       </div>
+
+      {/* ARB note untuk user */}
+      {chain === "ARB" && (
+        <p className="mt-3 text-[10px] th-text-ultrafaint leading-relaxed">
+          ⓘ Gas di Arbitrum dibayar dengan ETH, bukan token ARB. Estimasi fee dihitung dari harga ETH.
+        </p>
+      )}
+
     </div>
   );
 }
